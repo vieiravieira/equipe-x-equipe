@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equipe x Equipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;600;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0A0A0F;--card:#16161F;--card2:#20202C;--linha:#2A2A38;--txt:#fff;--sub:#B8B8C8;--a:#3DDC84;--b:#FF8A3D;--am:#FFD60A;--rosa:#FF2E88;--ok:#3DDC84}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;transition:background .5s}
+body.modo-desafio{background:radial-gradient(circle at 50% 45%,#4A0A2A 0%,#14040C 75%)}
+.bung{font-family:Bungee,Impact,sans-serif;font-weight:400}
+button{font-family:inherit}
+.btn{border:0;cursor:pointer;border-radius:14px;padding:14px 24px;font-weight:800;font-size:17px;background:var(--am);color:#0A0A0F;min-height:48px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sec{background:var(--card2);color:#fff;border:2px solid var(--linha)}
+.btn.verde{background:var(--ok)}
+.btn.rosa{background:var(--rosa)}
+input,select,textarea{font-family:inherit;background:var(--bg);border:2px solid var(--linha);border-radius:12px;padding:12px 14px;color:#fff;font-size:16px;width:100%}
+label{font-size:13px;font-weight:600;color:var(--sub);letter-spacing:1px}
+.erro{background:#3A0D16;border:2px solid #FF4D6D;color:#FFC2CE;border-radius:12px;padding:12px 16px;font-weight:600}
+.pisca{animation:piscaTxt 1s ease-in-out infinite}
+@keyframes piscaTxt{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.12)}}
+@keyframes gira{to{transform:rotate(360deg)}}
+.raios{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(rgba(255,214,10,.18) 0deg 10deg,transparent 10deg 20deg);animation:gira 14s linear infinite}
+.modo-desafio .raios{background:repeating-conic-gradient(rgba(255,46,136,.35) 0deg 8deg,transparent 8deg 16deg);animation-duration:7s}
+
+/* ---------- AVATARES ---------- */
+.av{width:var(--t,20vh);height:var(--t,20vh);position:relative;transition:width .9s cubic-bezier(.34,1.56,.64,1),height .9s cubic-bezier(.34,1.56,.64,1)}
+.av svg{width:100%;height:100%;overflow:visible;display:block}
+.av .ritmo{width:100%;height:100%;animation:ritmo .9s ease-in-out infinite alternate;transform-origin:50% 90%}
+@keyframes ritmo{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+.av .corpo{width:100%;height:100%;animation:respira 2.6s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes respira{0%,100%{transform:scale(1,1)}50%{transform:scale(1.035,.965)}}
+.av svg g{transform-box:fill-box;transform-origin:center}
+.av .p-olhos{animation:piscaOlho 4.2s infinite}
+@keyframes piscaOlho{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.av .oe{transform-origin:right bottom;animation:orelhaE 3.6s infinite}
+.av .od{transform-origin:left bottom;animation:orelhaD 3.6s 1.7s infinite}
+@keyframes orelhaE{0%,86%,100%{transform:rotate(0)}91%{transform:rotate(-14deg)}96%{transform:rotate(6deg)}}
+@keyframes orelhaD{0%,86%,100%{transform:rotate(0)}91%{transform:rotate(14deg)}96%{transform:rotate(-6deg)}}
+.av.encarando .p-sobr{animation:provoca 1.6s infinite}
+@keyframes provoca{0%,60%,100%{transform:translateY(0)}68%{transform:translateY(-8px)}76%{transform:translateY(0)}84%{transform:translateY(-6px)}}
+.av.encarando .p-boca{animation:rosna 3.4s infinite}
+@keyframes rosna{0%,78%,100%{transform:scale(1)}84%,92%{transform:scale(1.3,1.55)}}
+.av.nervoso .corpo{animation:treme .13s linear infinite}
+@keyframes treme{0%,100%{transform:translateX(0)}25%{transform:translateX(-3%)}75%{transform:translateX(3%)}}
+.av.feliz{animation:pulo .7s ease-out 3}
+.av.festa{animation:pulo 1.1s ease-in-out infinite}
+@keyframes pulo{0%,100%{transform:translateY(0)}40%{transform:translateY(-18%) scale(1.06)}70%{transform:translateY(0) scale(1.08,.92)}}
+.av.feliz .p-olhos,.av.festa .p-olhos{animation:none;transform:scaleY(.25)}
+.av.feliz .p-boca,.av.festa .p-boca{transform:scale(1.25,1.4)}
+.av.triste{animation:nao .45s ease-in-out 4}
+@keyframes nao{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.av.triste .p-sobr{transform:translateY(-7px) scaleX(.9)}
+.av.triste .p-boca{transform:scale(.7,.5)}
+.av.ri .corpo{animation:ri .22s ease-in-out infinite}
+@keyframes ri{0%,100%{transform:translateY(0)}50%{transform:translateY(-5%)}}
+.av.ri .p-boca{transform:scale(1.4,1.7)}
+.av.ri .p-olhos{animation:none;transform:scaleY(.3)}
+.av.susto{animation:susto .5s ease-out 1}
+@keyframes susto{0%,100%{transform:translateY(0)}30%{transform:translateY(-12%)}}
+.av.susto .p-olhos{animation:none;transform:scale(1.45)}
+.av .fx-estrelas,.av .fx-gota,.av .fx-exc{display:none;position:absolute;pointer-events:none;z-index:2}
+.av.feliz .fx-estrelas,.av.festa .fx-estrelas{display:block}
+.av.triste .fx-gota,.av.nervoso .fx-gota{display:block}
+.av.susto .fx-exc{display:block}
+.fx-estrelas{inset:-18%}
+.fx-estrelas i{position:absolute;width:18%;height:18%;animation:brilha 1s ease-in-out infinite}
+.fx-estrelas i svg{width:100%;height:100%}
+.fx-estrelas .s1{left:0;top:10%}.fx-estrelas .s2{right:0;top:0;animation-delay:.25s}.fx-estrelas .s3{left:8%;bottom:12%;animation-delay:.5s}.fx-estrelas .s4{right:6%;bottom:22%;animation-delay:.75s}
+@keyframes brilha{0%,100%{transform:scale(.3) rotate(0);opacity:0}50%{transform:scale(1) rotate(90deg);opacity:1}}
+.fx-gota{top:8%;right:8%;width:16%;height:22%;animation:escorre 1.2s ease-in infinite}
+@keyframes escorre{0%{transform:translateY(0);opacity:1}100%{transform:translateY(60%);opacity:0}}
+.fx-exc{top:-12%;left:50%;transform:translateX(-50%);font-family:Bungee,sans-serif;color:var(--am);font-size:calc(var(--t,20vh) * .3);animation:piscaTxt .5s infinite}
+
+/* ---------- CARTA ---------- */
+.carta{width:var(--cw,220px);height:calc(var(--cw,220px) * 1.42);position:relative;transform-style:preserve-3d;transition:transform .8s;border:0;padding:0;background:none;cursor:default;display:block}
+button.carta{cursor:pointer}
+.carta .verso,.carta .frente{position:absolute;inset:0;border-radius:18px;-webkit-backface-visibility:hidden;backface-visibility:hidden;border:5px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(255,46,136,.55)}
+.carta .verso{background:repeating-linear-gradient(45deg,#FF2E88 0 14px,#E0136F 14px 28px)}
+.carta .verso span{width:70%;height:70%;border-radius:14px;background:#0A0A0F;display:flex;align-items:center;justify-content:center;font-family:Bungee,sans-serif;font-size:calc(var(--cw,220px) * .4);color:var(--rosa)}
+.carta .frente{background:#fff;color:#0A0A0F;transform:rotateY(180deg);flex-direction:column;gap:6px;font-family:Bungee,sans-serif;font-size:calc(var(--cw,220px) * .14);text-align:center;border-color:var(--rosa)}
+.carta.aberta{transform:rotateY(180deg)}
+.carta.abrindo{animation:abre 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes abre{from{transform:rotateY(0) scale(.8)}to{transform:rotateY(900deg) scale(1)}}
+.carta.flutua{animation:flutua 1s ease-in-out infinite}
+@keyframes flutua{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
+
+/* ---------- HOME ---------- */
+.home{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:32px}
+.home h1{font-family:Bungee,sans-serif;font-size:clamp(40px,7vw,80px);margin:0;color:var(--am);font-weight:400}
+.home h1 b{color:var(--rosa);font-weight:400}
+.home .opcoes{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.home a{display:flex;flex-direction:column;gap:8px;width:240px;padding:28px;border-radius:20px;background:var(--card);border:2px solid var(--linha);color:#fff;text-decoration:none}
+.home a:hover{border-color:var(--am)}
+.home a b{font-family:Bungee,sans-serif;font-weight:400;font-size:24px;color:var(--am)}
+.home a span{color:var(--sub);font-size:15px}
+
+/* ---------- TV ---------- */
+.tv{height:100vh;overflow:hidden;display:flex;flex-direction:column;padding:2.6vh 3.5vw;gap:1.6vh;position:relative}
+.tv-top{display:flex;justify-content:space-between;align-items:center}
+.tv-top .nm{display:flex;flex-direction:column;gap:.4vh}
+.tv-top .nm b{font-family:Bungee,sans-serif;font-weight:400;font-size:3.6vh}
+.tv-top .nm span{font-size:1.8vh;color:var(--sub)}
+.tv-top .nm.a b{color:var(--a)}.tv-top .nm.b{text-align:right}.tv-top .nm.b b{color:var(--b)}
+.rodada{text-align:center;display:flex;flex-direction:column;gap:.4vh}
+.rodada b{font-family:Bungee,sans-serif;font-weight:400;font-size:2.8vh;color:var(--am)}
+.rodada span{font-size:1.8vh;letter-spacing:.4vh;color:var(--sub)}
+.arena{flex:1;min-height:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 3vw}
+.lado{display:flex;flex-direction:column;align-items:center;gap:1.4vh;min-width:26vw}
+.degraus{display:flex;gap:.5vh}
+.degraus i{width:1.6vh;height:2.6vh;border-radius:.4vh;background:var(--linha);transition:background .4s}
+.centro{position:relative;width:36vh;height:36vh;align-self:center;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.centro .miolo{position:relative;display:flex;flex-direction:column;align-items:center;gap:.6vh;text-align:center}
+.centro .num{font-family:Bungee,sans-serif;font-size:19vh;line-height:1;color:var(--am)}
+.centro .num.urgente{color:#FF4D6D}
+.centro .rot{font-size:2vh;letter-spacing:.5vh;color:var(--sub)}
+.modo-desafio .centro .num{color:var(--rosa)}
+.painel{background:var(--card);border:2px solid var(--linha);border-radius:2.6vh;padding:2.4vh 3vh;display:flex;flex-direction:column;gap:1.6vh}
+.modo-desafio .painel{background:rgba(30,6,18,.9);border-color:var(--rosa)}
+.painel .q{font-size:3.8vh;font-weight:800;line-height:1.2}
+.alts{display:grid;grid-template-columns:1fr 1fr;gap:1.2vh;font-size:2.5vh}
+.alts span{background:var(--card2);border-radius:1.4vh;padding:1.2vh 1.6vh;display:flex;gap:1.2vh;align-items:center}
+.alts span b{color:var(--am);font-family:Bungee,sans-serif;font-weight:400}
+.alts span.certa{background:var(--ok);color:#0A0A0F;font-weight:800}
+.alts span.certa b{color:#0A0A0F}
+.alts em{margin-left:auto;font-style:normal;font-size:1.6vh;font-weight:800;padding:.3vh 1vh;border-radius:99px;background:#0A0A0F}
+.status{display:flex;justify-content:space-between;font-size:1.9vh;font-weight:600;letter-spacing:.1vh}
+.banner{align-self:center;background:var(--rosa);color:#0A0A0F;font-family:Bungee,sans-serif;font-size:4.4vh;padding:1vh 3vh;border-radius:1.6vh;text-align:center}
+.tela-cheia{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:4vh 4vw;gap:2vh;z-index:5}
+.tela-cheia:empty{display:none}
+.tela-cheia h1{font-family:Bungee,sans-serif;font-weight:400;font-size:8vh;margin:0;color:var(--am);text-align:center}
+.tela-cheia h1 b{color:var(--rosa);font-weight:400}
+.slots{flex:1;width:100%;display:flex;justify-content:space-between;align-items:center}
+.slot{width:28vw;display:flex;flex-direction:column;align-items:center;gap:1.2vh}
+.slot .vazio{width:24vh;height:24vh;border-radius:50%;border:.5vh dashed #3A3A4A;display:flex;align-items:center;justify-content:center;font-family:Bungee,sans-serif;font-size:9vh;color:#3A3A4A}
+.codigo{display:flex;flex-direction:column;align-items:center;gap:1vh;background:var(--card);border:2px solid var(--linha);border-radius:3vh;padding:3.5vh 5vh}
+.codigo b{font-family:Bungee,sans-serif;font-weight:400;font-size:15vh;line-height:1;letter-spacing:1vh}
+.confete{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.confete i{position:absolute;top:-5vh;width:1.2vh;height:2.2vh;border-radius:.3vh;animation:cai linear infinite}
+@keyframes cai{to{transform:translateY(115vh) rotate(720deg)}}
+
+/* ---------- EQUIPE ---------- */
+.eq{min-height:100vh;padding:28px clamp(16px,4vw,56px);display:flex;flex-direction:column;gap:22px;max-width:1280px;margin:0 auto}
+.eq h2{font-family:Bungee,sans-serif;font-weight:400;margin:0;font-size:clamp(26px,3.6vw,42px)}
+.campos{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:20px;align-items:end}
+.campo{display:flex;flex-direction:column;gap:8px}
+.lado-btn{display:flex;gap:8px}
+.lado-btn button{flex:1;border-radius:12px;padding:14px;font-weight:800;font-size:17px;cursor:pointer;background:var(--card);border:2px solid var(--linha);color:#fff}
+.lado-btn button.sel.a{background:var(--a);color:#0A0A0F;border-color:var(--a)}
+.lado-btn button.sel.b{background:var(--b);color:#0A0A0F;border-color:var(--b)}
+.grade-av{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.grade-av button{background:var(--card);border:3px solid var(--linha);border-radius:18px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;color:#fff;font-weight:600;font-size:15px}
+.grade-av button.sel{border-color:var(--am);background:#26230F}
+.grade-av .av{--t:min(14vw,130px)}
+.topo-eq{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.topo-eq .quem{display:flex;align-items:center;gap:14px}
+.topo-eq .quem .av{--t:72px}
+.topo-eq .quem b{font-family:Bungee,sans-serif;font-weight:400;font-size:24px;display:block}
+.topo-eq .quem span{font-size:14px;color:var(--sub)}
+.timer-eq{font-family:Bungee,sans-serif;font-size:72px;line-height:1;color:var(--am)}
+.modo-desafio .timer-eq{color:var(--rosa)}
+.btn-desafio{display:flex;align-items:center;gap:10px;background:var(--rosa);color:#0A0A0F;border:0;border-radius:16px;padding:12px 20px;font-family:Bungee,sans-serif;font-size:19px;cursor:pointer;min-height:56px}
+.btn-desafio:disabled{opacity:.35;cursor:not-allowed}
+.btn-desafio em{font-family:Inter,sans-serif;font-style:normal;font-weight:800;font-size:13px;background:#0A0A0F;color:var(--rosa);border-radius:99px;padding:3px 9px}
+.pergunta-eq{font-size:clamp(24px,3vw,38px);font-weight:800;line-height:1.25}
+.alts-eq{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.alts-eq button{background:var(--card);border:2px solid var(--linha);border-radius:18px;padding:22px 26px;display:flex;align-items:center;gap:18px;font-size:clamp(17px,2vw,23px);font-weight:600;color:#fff;cursor:pointer;min-height:100px;text-align:left}
+.alts-eq button b{font-family:Bungee,sans-serif;font-weight:400;font-size:32px;color:var(--am);min-width:40px}
+.alts-eq button:hover:not(:disabled){border-color:var(--am)}
+.alts-eq button:disabled{cursor:default;opacity:.55}
+.alts-eq button.minha{opacity:1;border-color:var(--am);background:#26230F}
+.alts-eq button.certa{opacity:1;background:var(--ok);color:#0A0A0F;border-color:var(--ok)}
+.alts-eq button.certa b{color:#0A0A0F}
+.modo-desafio .alts-eq button{background:#1E0612;border-color:var(--rosa)}
+.modo-desafio .alts-eq button b{color:var(--rosa)}
+.centro-eq{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center}
+.centro-eq .av{--t:min(34vh,300px)}
+.grande{font-family:Bungee,sans-serif;font-weight:400;font-size:clamp(30px,4.4vw,56px);margin:0}
+.sub{color:var(--sub);font-size:18px}
+.cartas3{display:flex;gap:44px;align-items:center;justify-content:center;flex-wrap:wrap}
+.cartas3 .carta{--cw:min(19vw,230px);transition:transform .25s}
+.cartas3 .carta:nth-child(1){transform:rotate(-7deg)}.cartas3 .carta:nth-child(2){transform:translateY(-22px)}.cartas3 .carta:nth-child(3){transform:rotate(7deg)}
+.cartas3 .carta:hover{transform:scale(1.08) translateY(-10px)}
+.link{background:none;border:0;color:var(--sub);text-decoration:underline;font-size:16px;font-weight:600;cursor:pointer;padding:10px}
+.aviso-env{background:var(--card);border:2px solid var(--am);border-radius:16px;padding:14px 18px;text-align:center;font-weight:800;font-size:18px}
+
+/* ---------- ADMIN ---------- */
+.adm{max-width:1280px;margin:0 auto;padding:28px clamp(16px,3vw,40px);display:flex;flex-direction:column;gap:20px}
+.adm-topo{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.adm-topo h1{font-family:Bungee,sans-serif;font-weight:400;font-size:28px;margin:0;color:var(--am)}
+.adm-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;align-items:start}
+.caixa{background:var(--card);border:2px solid var(--linha);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.caixa h2{margin:0;font-size:18px}
+.filtros{display:flex;gap:8px;flex-wrap:wrap}
+.filtros button{background:none;border:1.5px solid var(--linha);color:#fff;border-radius:99px;padding:6px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.filtros button.sel{border-color:var(--am);color:var(--am)}
+.linha-q{display:grid;grid-template-columns:86px 92px 1fr auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--linha);font-size:15px}
+.tag{font-size:11px;font-weight:800;border:1.5px solid;border-radius:99px;padding:3px 9px;text-align:center}
+.tag.n{color:var(--am)}.tag.d{color:var(--rosa)}
+.linha-q .acoes{display:flex;gap:6px}
+.linha-q .acoes button{background:var(--card2);border:1px solid var(--linha);color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:13px;font-weight:600}
+.alt-linha{display:flex;align-items:center;gap:10px}
+.alt-linha input[type=radio]{width:22px;height:22px;accent-color:var(--ok);flex-shrink:0}
+.alt-linha b{font-family:Bungee,sans-serif;font-weight:400;color:var(--am);width:18px}
+.dupla{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.login{max-width:420px;margin:12vh auto;padding:0 20px}
+@media (max-width:900px){.adm-grid,.campos{grid-template-columns:1fr}.grade-av{grid-template-columns:repeat(3,1fr)}.alts-eq{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* =========================================================
+   CONFIGURAÇÃO — cole aqui os dados do seu projeto Supabase
+   (Supabase > Project Settings > API)
+   ========================================================= */
+var CONFIG = {
+  SUPABASE_URL: 'COLE_AQUI_A_URL_DO_SUPABASE',
+  SUPABASE_ANON_KEY: 'COLE_AQUI_A_ANON_KEY'
+};
+
+var TEMPO_PERGUNTA = 20, TEMPO_REVELACAO = 5, TEMPO_LER_DESAFIO = 3, TEMPO_RESP_DESAFIO = 8, TEMPO_RESULT_DESAFIO = 4;
+var PERGUNTAS_POR_PARTIDA = 10, DEGRAU_INICIAL = 3, DEGRAU_MIN = 1, DEGRAU_MAX = 10;
+
+var sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+var LET = 'ABCD';
+function OUTRA(e){ return e === 'A' ? 'B' : 'A'; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function temaNome(t){ return t === 'seguranca' ? 'SEGURANÇA DO TRABALHO' : 'PROCESSO'; }
+function corEq(e){ return e === 'A' ? 'var(--a)' : 'var(--b)'; }
+
+function abrirCanal(sala, aoReceber){
+  return new Promise(function(ok){
+    var ch = sb.channel('exe-' + sala, { config: { broadcast: { self: false } } });
+    ch.on('broadcast', { event: 'msg' }, function(r){ aoReceber(r.payload); });
+    ch.subscribe(function(st){ if (st === 'SUBSCRIBED') ok(ch); });
+  });
+}
+function enviar(ch, p){ ch.send({ type: 'broadcast', event: 'msg', payload: p }); }
+
+/* =========================================================
+   AVATARES (desenhos próprios, em partes para animar)
+   ========================================================= */
+var K = '#15151B';
+function fone(c){ return '<g class="p-fone"><path d="M34 100 Q34 22 100 22 Q166 22 166 100" fill="none" stroke="'+K+'" stroke-width="20" stroke-linecap="round"/><path d="M34 100 Q34 22 100 22 Q166 22 166 100" fill="none" stroke="'+c+'" stroke-width="10" stroke-linecap="round"/></g>'; }
+function cups(c){ return '<rect x="16" y="86" width="30" height="50" rx="10" fill="'+c+'" stroke="'+K+'" stroke-width="5"/><rect x="154" y="86" width="30" height="50" rx="10" fill="'+c+'" stroke="'+K+'" stroke-width="5"/>'; }
+var AV = {
+  lobo: function(L){ var g='#5D6370', a='#E8452C'; return {
+    fone: fone(a), cups: cups(a),
+    oe: '<path d="M46 26 L84 66 L40 96 Z" fill="'+g+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/>',
+    od: '<path d="M154 26 L116 66 L160 96 Z" fill="'+g+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/>',
+    cabeca: '<path d="M38 82 Q100 44 162 82 L170 130 Q150 176 100 192 Q50 176 30 130 Z" fill="'+g+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/><path d="M40 128 Q70 140 100 188 Q130 140 160 128 Q132 148 100 146 Q68 148 40 128 Z" fill="#D3D7DE"/><path d="M84 60 L100 84 L116 60 L100 70 Z" fill="#FF7A1A"/><ellipse cx="100" cy="146" rx="28" ry="22" fill="#ECEEF2" stroke="'+K+'" stroke-width="4"/><path d="M89 130 L111 130 L100 141 Z" fill="'+K+'"/>',
+    olhos: '<path d="M56 98 L90 106 L84 120 L62 114 Z" fill="#FFB020" stroke="'+K+'" stroke-width="4" stroke-linejoin="round"/><path d="M144 98 L110 106 L116 120 L138 114 Z" fill="#FFB020" stroke="'+K+'" stroke-width="4" stroke-linejoin="round"/><circle cx="'+(76+L)+'" cy="111" r="4.5" fill="'+K+'"/><circle cx="'+(124+L)+'" cy="111" r="4.5" fill="'+K+'"/>',
+    sobr: '<path d="M50 90 L94 102" stroke="'+K+'" stroke-width="8" stroke-linecap="round"/><path d="M150 90 L106 102" stroke="'+K+'" stroke-width="8" stroke-linecap="round"/>',
+    boca: '<path d="M82 154 Q100 178 118 154 Z" fill="#C62828" stroke="'+K+'" stroke-width="4" stroke-linejoin="round"/><path d="M86 155 L90 163 L94 155 Z M106 155 L110 163 L114 155 Z" fill="#fff"/>'
+  }; },
+  raposa: function(L){ var o='#FF6F0F', gr='#7A7F88', d='#2B2B33'; return {
+    fone: fone(d), cups: cups(d),
+    oe: '<path d="M42 30 L84 70 L36 100 Z" fill="'+o+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/><path d="M50 46 L72 70 L46 86 Z" fill="'+gr+'"/>',
+    od: '<path d="M158 30 L116 70 L164 100 Z" fill="'+o+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/><path d="M150 46 L128 70 L154 86 Z" fill="'+gr+'"/>',
+    cabeca: '<ellipse cx="100" cy="118" rx="70" ry="64" fill="'+o+'" stroke="'+K+'" stroke-width="6"/><path d="M36 124 Q72 122 100 172 Q128 122 164 124 Q152 176 100 182 Q48 176 36 124 Z" fill="#fff"/><path d="M92 56 L100 98 L108 56 Z" fill="'+gr+'"/><ellipse cx="100" cy="136" rx="9" ry="6.5" fill="'+K+'"/>',
+    olhos: '<circle cx="75" cy="110" r="13" fill="#FFB020" stroke="'+K+'" stroke-width="4"/><circle cx="125" cy="110" r="13" fill="#FFB020" stroke="'+K+'" stroke-width="4"/><circle cx="'+(75+L)+'" cy="111" r="6" fill="'+K+'"/><circle cx="'+(125+L)+'" cy="111" r="6" fill="'+K+'"/>',
+    sobr: '<path d="M56 92 L92 102" stroke="'+K+'" stroke-width="7" stroke-linecap="round"/><path d="M144 92 L108 102" stroke="'+K+'" stroke-width="7" stroke-linecap="round"/>',
+    boca: '<path d="M88 152 Q102 158 114 146" stroke="'+K+'" stroke-width="4" fill="none" stroke-linecap="round"/>'
+  }; },
+  urso: function(L){ var b='#7B4A2A', a='#19C3B4'; return {
+    fone: fone(a), cups: cups(a),
+    oe: '<circle cx="54" cy="56" r="22" fill="'+b+'" stroke="'+K+'" stroke-width="6"/>',
+    od: '<circle cx="146" cy="56" r="22" fill="'+b+'" stroke="'+K+'" stroke-width="6"/>',
+    cabeca: '<ellipse cx="100" cy="118" rx="72" ry="66" fill="'+b+'" stroke="'+K+'" stroke-width="6"/><ellipse cx="100" cy="148" rx="34" ry="26" fill="#D9A066" stroke="'+K+'" stroke-width="4"/><ellipse cx="100" cy="137" rx="11" ry="8" fill="'+K+'"/>',
+    olhos: '<path d="M58 104 L88 110 L84 122 L62 118 Z M142 104 L112 110 L116 122 L138 118 Z" fill="#fff" stroke="'+K+'" stroke-width="4" stroke-linejoin="round"/><circle cx="'+(75+L)+'" cy="115" r="4.5" fill="'+K+'"/><circle cx="'+(125+L)+'" cy="115" r="4.5" fill="'+K+'"/>',
+    sobr: '<path d="M54 96 L92 106 M146 96 L108 106" stroke="'+K+'" stroke-width="8" stroke-linecap="round"/>',
+    boca: '<path d="M84 156 Q100 170 116 156 Z" stroke="'+K+'" stroke-width="4" fill="#fff" stroke-linejoin="round"/>'
+  }; },
+  tigre: function(L){ var o='#FF9F1C', a='#8B5CF6'; return {
+    fone: fone(a), cups: cups(a),
+    oe: '<path d="M44 40 Q58 30 80 62 L44 86 Z" fill="'+o+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/>',
+    od: '<path d="M156 40 Q142 30 120 62 L156 86 Z" fill="'+o+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/>',
+    cabeca: '<path d="M36 84 Q100 44 164 84 L168 130 Q148 178 100 188 Q52 178 32 130 Z" fill="'+o+'" stroke="'+K+'" stroke-width="6" stroke-linejoin="round"/><path d="M44 132 Q72 136 100 182 Q128 136 156 132 Q130 150 100 150 Q70 150 44 132 Z" fill="#fff"/><path d="M100 56 L92 80 L100 76 L108 80 Z M70 66 L80 84 M130 66 L120 84 M38 112 L58 116 M162 112 L142 116 M40 126 L56 126 M160 126 L144 126" stroke="'+K+'" stroke-width="5" fill="'+K+'" stroke-linecap="round"/><path d="M90 136 L110 136 L100 146 Z" fill="#FF6F91" stroke="'+K+'" stroke-width="3" stroke-linejoin="round"/>',
+    olhos: '<path d="M58 100 L90 108 L84 120 L62 116 Z M142 100 L110 108 L116 120 L138 116 Z" fill="#4ADE80" stroke="'+K+'" stroke-width="4" stroke-linejoin="round"/><circle cx="'+(76+L)+'" cy="112" r="4.5" fill="'+K+'"/><circle cx="'+(124+L)+'" cy="112" r="4.5" fill="'+K+'"/>',
+    sobr: '<path d="M52 92 L92 104 M148 92 L108 104" stroke="'+K+'" stroke-width="8" stroke-linecap="round"/>',
+    boca: '<path d="M84 154 Q100 172 116 154 Z" fill="#C62828" stroke="'+K+'" stroke-width="4" stroke-linejoin="round"/>'
+  }; },
+  espeto: function(L){ return {
+    cabeca: '<circle cx="100" cy="100" r="92" fill="#3B5BA9"/><rect x="78" y="140" width="44" height="34" rx="8" fill="#5A3A2E"/><rect x="72" y="172" width="22" height="14" rx="5" fill="#3A2A22"/><rect x="106" y="172" width="22" height="14" rx="5" fill="#3A2A22"/><rect x="48" y="58" width="104" height="90" rx="22" fill="#F0B987"/><path d="M44 78 L52 30 L70 52 L84 14 L98 46 L116 10 L124 46 L146 22 L144 60 L162 54 L150 84 Q100 62 48 84 Z" fill="#2E2A2A"/>',
+    olhos: '<circle cx="'+(80+L)+'" cy="108" r="7" fill="'+K+'"/><circle cx="'+(120+L)+'" cy="108" r="7" fill="'+K+'"/>',
+    sobr: '<path d="M72 94 L90 98 M128 94 L110 98" stroke="'+K+'" stroke-width="5" stroke-linecap="round"/>',
+    boca: '<path d="M94 128 L106 128 L100 121 Z" fill="#fff"/>'
+  }; },
+  ninja: function(L){ return {
+    cabeca: '<circle cx="100" cy="100" r="92" fill="#F08A5D"/><rect x="78" y="140" width="44" height="34" rx="8" fill="#2D2D38"/><rect x="72" y="172" width="22" height="14" rx="5" fill="#1C1C24"/><rect x="106" y="172" width="22" height="14" rx="5" fill="#1C1C24"/><rect x="48" y="44" width="104" height="104" rx="22" fill="#3A3A48"/><path d="M52 70 L148 64 M52 136 L148 132" stroke="#4C4C5C" stroke-width="5"/><rect x="48" y="78" width="104" height="18" fill="#E8452C"/><path d="M150 82 L178 72 L172 92 Z" fill="#E8452C"/><rect x="58" y="100" width="84" height="22" rx="6" fill="#E9E2D6"/>',
+    olhos: '<circle cx="'+(82+L)+'" cy="111" r="6" fill="'+K+'"/><circle cx="'+(118+L)+'" cy="111" r="6" fill="'+K+'"/>',
+    sobr: '<path d="M70 102 L90 106 M130 102 L110 106" stroke="'+K+'" stroke-width="4" stroke-linecap="round"/>',
+    boca: '<path d="M90 132 L110 132" stroke="#2A2A36" stroke-width="4" stroke-linecap="round"/>'
+  }; }
+};
+var AV_NOMES = { lobo:'Lobo', raposa:'Raposa', urso:'Urso', tigre:'Tigre', espeto:'Espeto', ninja:'Ninja' };
+var STAR = '<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L21 9.5l-5 4.4 1.5 6.6L12 17l-5.5 3.5L8 13.9 3 9.5l6.4-.9z" fill="#FFD60A"/></svg>';
+var GOTA = '<svg viewBox="0 0 20 28" width="100%" height="100%"><path d="M10 0 Q20 16 10 27 Q0 16 10 0 Z" fill="#6EC8FF" stroke="#15151B" stroke-width="2"/></svg>';
+function avatarSVG(tipo, look){
+  var g = (AV[tipo] || AV.lobo)(look || 0);
+  return '<div class="fx-estrelas"><i class="s1">'+STAR+'</i><i class="s2">'+STAR+'</i><i class="s3">'+STAR+'</i><i class="s4">'+STAR+'</i></div><div class="fx-exc">!</div><div class="fx-gota">'+GOTA+'</div>'
+    + '<div class="ritmo"><div class="corpo"><svg viewBox="0 0 200 200" aria-hidden="true">' + (g.fone||'')
+    + '<g class="p-orelhas"><g class="oe">'+(g.oe||'')+'</g><g class="od">'+(g.od||'')+'</g></g>' + g.cabeca
+    + '<g class="p-olhos">'+g.olhos+'</g><g class="p-sobr">'+(g.sobr||'')+'</g><g class="p-boca">'+(g.boca||'')+'</g>' + (g.cups||'')
+    + '</svg></div></div>';
+}
+function avatarHTML(tipo, look, estado, tam, id){
+  return '<div class="av '+(estado||'')+'"'+(id?' id="'+id+'"':'')+' data-tipo="'+tipo+'" data-estado="'+(estado||'')+'" style="'+(tam?'--t:'+tam:'')+'">'+avatarSVG(tipo, look)+'</div>';
+}
+function setEstado(el, cls){
+  if (!el || el.getAttribute('data-estado') === cls) return;
+  var velho = el.getAttribute('data-estado');
+  if (velho) el.classList.remove(velho);
+  void el.offsetWidth;
+  if (cls) el.classList.add(cls);
+  el.setAttribute('data-estado', cls);
+}
+function tamanhoTV(d){ return (9 + d * 3.1).toFixed(1) + 'vh'; }
+function cartaHTML(classes, cw, tag, attrs){
+  tag = tag || 'div';
+  return '<'+tag+' class="carta '+(classes||'')+'" style="--cw:'+cw+'" '+(attrs||'')+'><span class="verso"><span>?</span></span><span class="frente">PERGUNTA<br>DESAFIO</span></'+tag+'>';
+}
+function degrausHTML(n, cor){ var h=''; for (var i=1;i<=10;i++) h += '<i style="'+(i<=n?'background:'+cor:'')+'"></i>'; return h; }
+
+/* =========================================================
+   ROTEADOR
+   ========================================================= */
+window.addEventListener('hashchange', function(){ location.reload(); });
+function iniciar(){
+var modo = location.hash.replace('#','');
+if (CONFIG.SUPABASE_URL.indexOf('COLE_AQUI') === 0) {
+  $('#app').innerHTML = '<div class="home"><div class="erro">Falta configurar o Supabase: abra o arquivo index.html e cole a URL e a anon key no começo do código.</div></div>';
+} else if (modo === 'tv') initTV();
+else if (modo === 'equipe') initEquipe();
+else if (modo === 'admin') initAdmin();
+else initHome();
+}
+
+function initHome(){
+  $('#app').innerHTML = '<div class="home"><h1>EQUIPE <b>x</b> EQUIPE</h1><div class="opcoes">'
+    + '<a href="#tv"><b>TV</b><span>Abra na TV grande. Ela cria a sala e mostra o show.</span></a>'
+    + '<a href="#equipe"><b>EQUIPE</b><span>Abra em cada notebook para a equipe jogar.</span></a>'
+    + '<a href="#admin"><b>ADMIN</b><span>Cadastrar e editar as perguntas.</span></a>'
+    + '</div></div>';
+}
+
+/* =========================================================
+   TV — comanda o jogo (nada é salvo)
+   ========================================================= */
+var S, chTV, banco = { normal: [], desafio: [] }, filaPerg = [], usadosDesafio = {}, sigCentro = '', sigPainel = '', sigCheia = '';
+function mk(r){ return { id: r.id, tema: r.tema, texto: r.pergunta, alts: r.alternativas, correta: r.correta }; }
+
+function initTV(){
+  document.body.classList.add('tv-mode');
+  $('#app').innerHTML = '<div class="home"><h1 class="pisca">CARREGANDO…</h1></div>';
+  sb.from('perguntas').select('*').then(function(res){
+    if (res.error) { $('#app').innerHTML = '<div class="home"><div class="erro">Erro ao buscar perguntas: '+esc(res.error.message)+'</div></div>'; return; }
+    var rows = res.data || [];
+    banco.normal = rows.filter(function(p){ return p.tipo === 'normal'; });
+    banco.desafio = rows.filter(function(p){ return p.tipo === 'desafio'; });
+    if (!banco.normal.length) { $('#app').innerHTML = '<div class="home"><div class="erro">Nenhuma pergunta normal cadastrada. Cadastre pela tela Admin.</div><a class="btn" href="#admin" style="text-decoration:none">Ir para o Admin</a></div>'; return; }
+    filaPerg = shuffle(banco.normal).slice(0, PERGUNTAS_POR_PARTIDA);
+    var sala = String(Math.floor(1000 + Math.random() * 9000));
+    S = { sala: sala, fase: 'lobby', equipes: { A: null, B: null }, idx: -1, total: filaPerg.length, pergunta: null,
+          respostas: { A: null, B: null }, resultado: null, tempo: 0, desafio: null, temDesafio: banco.desafio.length > 0 };
+    montarTV();
+    abrirCanal(sala, onMsgTV).then(function(ch){ chTV = ch; publicar(); setInterval(tick, 1000); });
+    renderTV();
+  });
+}
+
+function pub(){
+  var s = JSON.parse(JSON.stringify(S));
+  if (s.pergunta && s.fase !== 'revelacao') delete s.pergunta.correta;
+  if (s.desafio && s.desafio.pergunta) {
+    var et = s.desafio.etapa;
+    if (et !== 'lendo' && et !== 'respondendo' && et !== 'resultado') s.desafio.pergunta = null;
+    else if (et !== 'resultado') delete s.desafio.pergunta.correta;
+  }
+  return s;
+}
+function publicar(){ if (chTV) enviar(chTV, { t: 'estado', s: pub() }); renderTV(); }
+
+function onMsgTV(m){
+  var d = S.desafio, eq;
+  if (m.t === 'ola') { publicar(); }
+  else if (m.t === 'entrar') {
+    var atual = S.equipes[m.equipe];
+    if (atual && atual.cid !== m.cid && atual.nome.toLowerCase() !== String(m.nome).toLowerCase()) {
+      enviar(chTV, { t: 'recusado', cid: m.cid, motivo: 'Esse lado já está com a equipe ' + atual.nome + '. Escolha o outro lado.' }); return;
+    }
+    if (!atual && S.fase !== 'lobby') { enviar(chTV, { t: 'recusado', cid: m.cid, motivo: 'O jogo já começou.' }); return; }
+    if (atual) atual.cid = m.cid;
+    else S.equipes[m.equipe] = { nome: String(m.nome).slice(0, 16), avatar: AV[m.avatar] ? m.avatar : 'lobo', degrau: DEGRAU_INICIAL, desafioUsado: false, cid: m.cid };
+    if (S.fase === 'lobby' && S.equipes.A && S.equipes.B) { S.fase = 'contagem'; S.tempo = 5; }
+    publicar();
+  }
+  else if (m.t === 'responder') {
+    if (S.fase === 'pergunta' && !d && m.idx === S.idx && S.respostas[m.equipe] === null) {
+      S.respostas[m.equipe] = m.alt;
+      if (S.respostas.A !== null && S.respostas.B !== null) revelar(); else publicar();
+    }
+  }
+  else if (m.t === 'desafiar') {
+    eq = S.equipes[m.equipe];
+    if (!eq || eq.desafioUsado || d || (S.fase !== 'pergunta' && S.fase !== 'revelacao')) return;
+    var disp = banco.desafio.filter(function(p){ return !usadosDesafio[p.id]; });
+    if (!disp.length) return;
+    S.desafio = { de: m.equipe, para: OUTRA(m.equipe), etapa: 'escolhendo', cartas: shuffle(disp).slice(0, 3).map(function(p){ return p.id; }), pergunta: null, tempo: 0, resposta: null, acertou: null };
+    publicar();
+  }
+  else if (m.t === 'cancelar_desafio') {
+    if (d && d.etapa === 'escolhendo' && d.de === m.equipe) { S.desafio = null; publicar(); }
+  }
+  else if (m.t === 'escolher_carta') {
+    if (!d || d.etapa !== 'escolhendo' || d.de !== m.equipe) return;
+    var id = d.cartas[m.n], r = null;
+    banco.desafio.forEach(function(p){ if (p.id === id) r = p; });
+    if (!r) return;
+    usadosDesafio[id] = true; S.equipes[d.de].desafioUsado = true;
+    d.pergunta = mk(r); d.etapa = 'carta'; publicar();
+  }
+  else if (m.t === 'abrir_carta') {
+    if (d && d.etapa === 'carta' && d.para === m.equipe) { d.etapa = 'lendo'; d.tempo = TEMPO_LER_DESAFIO; publicar(); }
+  }
+  else if (m.t === 'responder_desafio') {
+    if (d && d.etapa === 'respondendo' && d.para === m.equipe && d.resposta === null) { d.resposta = m.alt; fecharDesafio(); }
+  }
+}
+
+function revelar(){
+  S.fase = 'revelacao'; S.tempo = TEMPO_REVELACAO; S.resultado = {};
+  ['A','B'].forEach(function(e){
+    var ok = S.respostas[e] === S.pergunta.correta;
+    S.resultado[e] = ok;
+    if (ok) S.equipes[e].degrau = clamp(S.equipes[e].degrau + 1, DEGRAU_MIN, DEGRAU_MAX);
+  });
+  publicar();
+}
+function fecharDesafio(){
+  var d = S.desafio, eq = S.equipes[d.para];
+  d.acertou = d.resposta === d.pergunta.correta;
+  eq.degrau = clamp(eq.degrau + (d.acertou ? 3 : -3), DEGRAU_MIN, DEGRAU_MAX);
+  d.etapa = 'resultado'; d.tempo = TEMPO_RESULT_DESAFIO; publicar();
+}
+function proxima(){
+  S.idx++;
+  if (S.idx >= filaPerg.length) { S.fase = 'final'; S.pergunta = null; publicar(); return; }
+  S.pergunta = mk(filaPerg[S.idx]); S.respostas = { A: null, B: null }; S.resultado = null;
+  S.fase = 'pergunta'; S.tempo = TEMPO_PERGUNTA; publicar();
+}
+function tick(){
+  var d = S.desafio;
+  if (d) {
+    if (d.etapa === 'lendo' || d.etapa === 'respondendo' || d.etapa === 'resultado') {
+      d.tempo--;
+      if (d.tempo <= 0) {
+        if (d.etapa === 'lendo') { d.etapa = 'respondendo'; d.tempo = TEMPO_RESP_DESAFIO; }
+        else if (d.etapa === 'respondendo') { fecharDesafio(); return; }
+        else { S.desafio = null; }
+      }
+      publicar();
+    }
+    return; // jogo congelado durante o desafio
+  }
+  if (S.fase === 'contagem') { S.tempo--; if (S.tempo <= 0) { proxima(); return; } publicar(); }
+  else if (S.fase === 'pergunta') { S.tempo--; if (S.tempo <= 0) { revelar(); return; } publicar(); }
+  else if (S.fase === 'revelacao') { S.tempo--; if (S.tempo <= 0) { proxima(); return; } publicar(); }
+}
+
+function montarTV(){
+  $('#app').innerHTML = '<div class="tv">'
+    + '<header class="tv-top"><div class="nm a" id="nmA"></div><div class="rodada" id="rodada"></div><div class="nm b" id="nmB"></div></header>'
+    + '<main class="arena"><div class="lado"><div id="slotA"></div><div class="degraus" id="dgA"></div></div><div class="centro" id="centro"></div><div class="lado"><div id="slotB"></div><div class="degraus" id="dgB"></div></div></main>'
+    + '<section class="painel" id="painel"></section><div class="tela-cheia" id="cheia"></div></div>';
+}
+function estadoAvatar(e){
+  var d = S.desafio;
+  if (S.fase === 'final') return 'festa';
+  if (d) {
+    if (e === d.de) return (d.etapa === 'resultado' && d.acertou) ? '' : 'ri';
+    if (d.etapa === 'resultado') return d.acertou ? 'feliz' : 'triste';
+    if (d.etapa === 'respondendo') return 'nervoso';
+    return 'susto';
+  }
+  if (S.fase === 'revelacao') return S.resultado[e] ? 'feliz' : 'triste';
+  if (S.fase === 'pergunta') return (S.respostas[e] === null && S.tempo <= 3) ? 'nervoso' : 'encarando';
+  return 'encarando';
+}
+function renderTV(){
+  var d = S.desafio;
+  document.body.classList.toggle('modo-desafio', !!d);
+  // telas cheias (sala de espera e encerramento)
+  var cheia = $('#cheia'), sig = S.fase === 'lobby' ? 'lobby' + JSON.stringify(S.equipes) : (S.fase === 'final' ? 'final' : '');
+  if (sig !== sigCheia) {
+    sigCheia = sig;
+    if (S.fase === 'lobby') {
+      var slot = function(e){
+        var q = S.equipes[e];
+        if (!q) return '<div class="slot"><div class="vazio">?</div><b class="bung" style="font-size:3.4vh;color:#6A6A7A">EQUIPE '+e+'</b><span class="pisca" style="color:var(--sub)">aguardando…</span></div>';
+        return '<div class="slot">'+avatarHTML(q.avatar, e==='A'?4:-4, 'encarando', '24vh')+'<b class="bung" style="font-size:3.4vh;color:'+corEq(e)+'">'+esc(q.nome).toUpperCase()+'</b><span style="color:'+corEq(e)+'">● entrou na sala</span></div>';
+      };
+      cheia.innerHTML = '<h1>EQUIPE <b>x</b> EQUIPE</h1><span style="color:var(--sub);letter-spacing:.3vh;font-size:2.2vh">PROCESSOS E SEGURANÇA DO TRABALHO</span>'
+        + '<div class="slots">'+slot('A')+'<div class="codigo"><span style="letter-spacing:.4vh;color:var(--sub)">CÓDIGO DA SALA</span><b>'+S.sala+'</b><span style="color:var(--sub)">Digite este código nos notebooks</span></div>'+slot('B')+'</div>'
+        + '<span style="color:var(--sub);font-size:2.2vh">Quando as duas equipes entrarem, o jogo começa sozinho.</span>';
+    } else if (S.fase === 'final') {
+      var A = S.equipes.A, B = S.equipes.B, cores = ['#FFD60A','#FF2E88','#3DDC84','#FF8A3D','#2EC4FF'], conf = '';
+      for (var i=0;i<60;i++) conf += '<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:'+cores[i%5]+';animation-duration:'+(3+Math.random()*4).toFixed(1)+'s;animation-delay:-'+(Math.random()*6).toFixed(1)+'s"></i>';
+      cheia.innerHTML = '<div class="confete">'+conf+'</div><h1 style="position:relative">MANDARAM BEM, '+esc(A.nome).toUpperCase()+' E '+esc(B.nome).toUpperCase()+'!</h1>'
+        + '<span style="position:relative;color:var(--sub);font-size:2.6vh">Obrigado por jogar. Processo e segurança em dia!</span>'
+        + '<div style="position:relative;flex:1;display:flex;align-items:flex-end;gap:8vw;padding-bottom:2vh">'
+        + ['A','B'].map(function(e){ var q=S.equipes[e]; return '<div style="display:flex;flex-direction:column;align-items:center;gap:1.4vh">'+avatarHTML(q.avatar,0,'festa',tamanhoTV(q.degrau))+'<b class="bung" style="font-size:3.6vh;color:'+corEq(e)+'">'+esc(q.nome).toUpperCase()+'</b><div class="degraus">'+degrausHTML(q.degrau,corEq(e))+'</div></div>'; }).join('')
+        + '</div>';
+    } else cheia.innerHTML = '';
+  }
+  if (S.fase === 'lobby' || S.fase === 'final') return;
+
+  // topo
+  ['A','B'].forEach(function(e){
+    var q = S.equipes[e]; if (!q) return;
+    $('#nm'+e).innerHTML = '<b>'+esc(q.nome).toUpperCase()+'</b><span>Equipe '+e+' · carta desafio: '+(q.desafioUsado?'usada':'1')+'</span>';
+    var slot = $('#slot'+e), av = slot.firstChild;
+    if (!av || av.getAttribute('data-tipo') !== q.avatar) { slot.innerHTML = avatarHTML(q.avatar, e==='A'?4:-4, '', tamanhoTV(q.degrau)); av = slot.firstChild; }
+    av.style.setProperty('--t', tamanhoTV(q.degrau));
+    setEstado(av, estadoAvatar(e));
+    $('#dg'+e).innerHTML = degrausHTML(q.degrau, corEq(e));
+  });
+  $('#rodada').innerHTML = S.fase === 'contagem' ? '<b>PREPAREM-SE!</b><span>'+S.total+' PERGUNTAS</span>'
+    : '<b>PERGUNTA '+(S.idx+1)+' DE '+S.total+'</b><span>'+temaNome(S.pergunta.tema)+'</span>';
+
+  // centro
+  var c, tempo = d ? d.tempo : S.tempo, sc;
+  if (d) sc = 'd' + d.etapa; else sc = S.fase + S.idx;
+  if (sc !== sigCentro) {
+    sigCentro = sc;
+    if (d) {
+      if (d.etapa === 'escolhendo') c = '<div class="raios"></div><div class="miolo">'+cartaHTML('flutua','17vh')+'<span class="rot">ESCOLHENDO A CARTA…</span></div>';
+      else if (d.etapa === 'carta') c = '<div class="raios"></div><div class="miolo pisca">'+cartaHTML('','20vh')+'</div>';
+      else if (d.etapa === 'lendo') c = '<div class="raios"></div><div class="miolo">'+cartaHTML('abrindo','11vh')+'<span class="num" id="tempo" style="font-size:10vh">'+tempo+'</span><span class="rot">LEIAM!</span></div>';
+      else if (d.etapa === 'respondendo') c = '<div class="raios"></div><div class="miolo"><span class="num pisca" id="tempo">'+tempo+'</span><span class="rot">SEGUNDOS</span></div>';
+      else c = '<div class="raios"></div><div class="miolo"><span class="num" style="color:'+(d.acertou?'var(--ok)':'#FF4D6D')+'">'+(d.acertou?'+3':'−3')+'</span><span class="rot">DEGRAUS</span></div>';
+    } else if (S.fase === 'contagem') c = '<div class="raios"></div><div class="miolo"><span class="rot">COMEÇA EM</span><span class="num pisca" id="tempo">'+tempo+'</span></div>';
+    else if (S.fase === 'pergunta') c = '<div class="raios"></div><div class="miolo"><span class="num pisca" id="tempo">'+tempo+'</span><span class="rot">SEGUNDOS</span></div>';
+    else c = '<div class="raios"></div><div class="miolo"><span class="rot">RESPOSTA CERTA</span><span class="num" style="color:var(--ok)">'+LET[S.pergunta.correta]+'</span><span class="rot" style="letter-spacing:.2vh">próxima em <b class="pisca" id="tempo" style="display:inline-block;color:var(--am)">'+tempo+'</b></span></div>';
+    $('#centro').innerHTML = c;
+  } else { var t = $('#tempo'); if (t) t.textContent = tempo; }
+  var tn = $('#tempo'); if (tn && tn.classList.contains('num')) tn.classList.toggle('urgente', !d && S.fase === 'pergunta' && tempo <= 5);
+
+  // painel
+  var sp = sc + JSON.stringify(S.respostas), p = '';
+  if (sp === sigPainel) return;
+  sigPainel = sp;
+  var nA = esc(S.equipes.A.nome).toUpperCase(), nB = esc(S.equipes.B.nome).toUpperCase();
+  if (d) {
+    var de = esc(S.equipes[d.de].nome).toUpperCase(), para = esc(S.equipes[d.para].nome).toUpperCase();
+    p = '<div class="banner pisca">DESAFIO ATIVADO PELA EQUIPE '+de+'</div>';
+    if (d.etapa === 'escolhendo') p += '<div class="status" style="justify-content:center;color:#E8C2D6">Jogo pausado · '+de+' está escolhendo uma carta para '+para+'</div>';
+    else if (d.etapa === 'carta') p += '<div class="status pisca" style="justify-content:center">'+para+' PRECISAM ABRIR A CARTA</div><div class="status" style="justify-content:center;color:#E8C2D6">3 segundos para ler · 8 para responder · acertou sobe 3 degraus · errou desce 3</div>';
+    else if (d.etapa === 'resultado') p += '<div class="q" style="text-align:center">'+(d.acertou ? para+' ACERTARAM O DESAFIO!' : 'NÃO FOI DESSA VEZ, '+para+'!')+'</div><div class="alts">'+d.pergunta.alts.map(function(a,i){ return '<span class="'+(i===d.pergunta.correta?'certa':'')+'"><b>'+LET[i]+'</b>'+esc(a)+'</span>'; }).join('')+'</div>';
+    else p += '<div class="q">'+esc(d.pergunta.texto)+'</div><div class="alts">'+d.pergunta.alts.map(function(a,i){ return '<span><b>'+LET[i]+'</b>'+esc(a)+'</span>'; }).join('')+'</div>';
+  } else if (S.fase === 'contagem') {
+    p = '<div class="q" style="text-align:center">'+nA+' x '+nB+'</div><div class="status" style="justify-content:center;color:var(--sub)">Acertou: o avatar cresce · cada equipe tem 1 carta desafio</div>';
+  } else {
+    var q = S.pergunta, rev = S.fase === 'revelacao';
+    p = '<div class="q">'+esc(q.texto)+'</div><div class="alts">'+q.alts.map(function(a,i){
+      var marcas = '';
+      if (rev) ['A','B'].forEach(function(e){ if (S.respostas[e] === i) marcas += '<em style="color:'+corEq(e)+'">'+esc(S.equipes[e].nome).toUpperCase()+'</em>'; });
+      return '<span class="'+(rev && i===q.correta?'certa':'')+'"><b>'+LET[i]+'</b>'+esc(a)+marcas+'</span>'; }).join('')+'</div>';
+    var st = function(e){
+      var n = esc(S.equipes[e].nome).toUpperCase();
+      if (rev) return '<span style="color:'+corEq(e)+'">'+(S.resultado[e] ? n+' ACERTOU · +1 DEGRAU' : n+' · FICA PRA PRÓXIMA')+'</span>';
+      return S.respostas[e] !== null ? '<span style="color:'+corEq(e)+'">● '+n+' JÁ RESPONDEU</span>' : '<span class="pisca" style="color:'+corEq(e)+'">'+n+' PENSANDO…</span>';
+    };
+    p += '<div class="status">'+st('A')+st('B')+'</div>';
+  }
+  $('#painel').innerHTML = p;
+}
+
+/* =========================================================
+   EQUIPE (notebook)
+   ========================================================= */
+var E = { cid: Math.random().toString(36).slice(2), equipe: 'A', avatar: 'lobo', ch: null, s: null, ok: false, sig: '', minha: {} };
+
+function initEquipe(){
+  var grade = Object.keys(AV).map(function(k){ return '<button type="button" data-av="'+k+'" class="'+(k===E.avatar?'sel':'')+'" aria-pressed="'+(k===E.avatar)+'">'+avatarHTML(k,0,'encarando')+AV_NOMES[k]+'</button>'; }).join('');
+  $('#app').innerHTML = '<form class="eq" id="fEntrar"><h2 style="color:var(--am)">ENTRAR NO JOGO</h2><div id="msgErro"></div>'
+    + '<div class="campos"><div class="campo"><label for="cod">CÓDIGO DA SALA</label><input id="cod" inputmode="numeric" maxlength="4" required class="bung" style="letter-spacing:6px;font-size:24px"></div>'
+    + '<div class="campo"><label>LADO</label><div class="lado-btn"><button type="button" data-lado="A" class="a sel">Equipe A</button><button type="button" data-lado="B" class="b">Equipe B</button></div></div>'
+    + '<div class="campo"><label for="nome">NOME DA EQUIPE</label><input id="nome" maxlength="16" required placeholder="Ex.: Lobos"></div></div>'
+    + '<label>ESCOLHA O AVATAR</label><div class="grade-av">'+grade+'</div>'
+    + '<button class="btn" id="bEntrar" style="align-self:center;font-family:Bungee,sans-serif;font-weight:400;font-size:24px;padding:18px 56px">ENTRAR NA SALA</button></form>';
+  $('#fEntrar').addEventListener('click', function(ev){
+    var b = ev.target.closest('button'); if (!b) return;
+    if (b.getAttribute('data-lado')) { E.equipe = b.getAttribute('data-lado'); document.querySelectorAll('[data-lado]').forEach(function(x){ x.classList.toggle('sel', x === b); }); }
+    if (b.getAttribute('data-av')) { E.avatar = b.getAttribute('data-av'); document.querySelectorAll('[data-av]').forEach(function(x){ x.classList.toggle('sel', x === b); x.setAttribute('aria-pressed', x === b); }); }
+  });
+  $('#fEntrar').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var cod = $('#cod').value.trim(), nome = $('#nome').value.trim();
+    if (!/^\d{4}$/.test(cod) || !nome) return;
+    $('#bEntrar').disabled = true; $('#bEntrar').textContent = 'ENTRANDO…'; $('#msgErro').innerHTML = '';
+    var falhou = setTimeout(function(){ if (!E.ok) erroEntrar('Sala não encontrada. Confira o código e se a TV está aberta.'); }, 5000);
+    var go = function(){ enviar(E.ch, { t: 'entrar', equipe: E.equipe, nome: nome, avatar: E.avatar, cid: E.cid }); };
+    if (E.ch && E.sala === cod) { go(); return; }
+    if (E.ch) sb.removeChannel(E.ch);
+    E.sala = cod;
+    abrirCanal(cod, onMsgEq).then(function(ch){ E.ch = ch; go(); });
+    E._t = falhou;
+  });
+}
+function erroEntrar(msg){
+  var b = $('#bEntrar'); if (!b) return;
+  $('#msgErro').innerHTML = '<div class="erro">'+esc(msg)+'</div>'; b.disabled = false; b.textContent = 'ENTRAR NA SALA';
+}
+function onMsgEq(m){
+  if (m.t === 'recusado' && m.cid === E.cid) { erroEntrar(m.motivo); return; }
+  if (m.t !== 'estado') return;
+  E.s = m.s;
+  if (!E.ok) {
+    var q = E.s.equipes[E.equipe];
+    if (q && q.cid === E.cid) { E.ok = true; clearTimeout(E._t); montarEq(); }
+    else return;
+  }
+  renderEq();
+}
+function montarEq(){
+  $('#app').innerHTML = '<div class="eq" id="eqTela"></div>';
+  $('#eqTela').addEventListener('click', function(ev){
+    var b = ev.target.closest('[data-act]'); if (!b || b.disabled) return;
+    var a = b.getAttribute('data-act'), s = E.s;
+    if (a === 'resp') { var alt = +b.getAttribute('data-i'); E.minha[s.idx] = alt; enviar(E.ch, { t: 'responder', equipe: E.equipe, idx: s.idx, alt: alt }); E.sig = ''; renderEq(); }
+    else if (a === 'desafiar') enviar(E.ch, { t: 'desafiar', equipe: E.equipe });
+    else if (a === 'carta') enviar(E.ch, { t: 'escolher_carta', equipe: E.equipe, n: +b.getAttribute('data-n') });
+    else if (a === 'cancelar') enviar(E.ch, { t: 'cancelar_desafio', equipe: E.equipe });
+    else if (a === 'abrir') enviar(E.ch, { t: 'abrir_carta', equipe: E.equipe });
+    else if (a === 'respd') { E.minhaD = +b.getAttribute('data-i'); enviar(E.ch, { t: 'responder_desafio', equipe: E.equipe, alt: E.minhaD }); E.sig = ''; renderEq(); }
+  });
+}
+function altsEq(alts, act, travado, minha, certa){
+  return '<div class="alts-eq">'+alts.map(function(a,i){
+    var cls = (certa === i ? 'certa ' : '') + (minha === i ? 'minha' : '');
+    return '<button data-act="'+act+'" data-i="'+i+'" class="'+cls+'" '+(travado?'disabled':'')+'><b>'+LET[i]+'</b>'+esc(a)+'</button>'; }).join('')+'</div>';
+}
+function renderEq(){
+  var s = E.s, eu = E.equipe, ot = OUTRA(eu), me = s.equipes[eu], out = s.equipes[ot], d = s.desafio;
+  document.body.classList.toggle('modo-desafio', !!d);
+  var tempo = d ? d.tempo : s.tempo;
+  var sig = s.fase + '|' + s.idx + '|' + (d ? d.etapa + d.de + (d.resposta === null ? '' : 'r') : '') + '|' + JSON.stringify(s.respostas) + '|' + me.desafioUsado + '|' + (E.minha[s.idx] === undefined ? '' : 'm') + (E.minhaD === undefined ? '' : 'd');
+  if (sig === E.sig) { var t = $('#tempoEq'); if (t) t.textContent = tempo; return; }
+  E.sig = sig;
+  var nome = esc(me.nome).toUpperCase(), nOut = out ? esc(out.nome).toUpperCase() : 'A OUTRA EQUIPE', h = '';
+  var cor = corEq(eu);
+  var topo = function(timer, btnDesafio){
+    var podeDesafiar = s.temDesafio && !me.desafioUsado && !d;
+    return '<div class="topo-eq"><div class="quem">'+avatarHTML(me.avatar,0,'encarando')+'<div><b style="color:'+cor+'">'+nome+'</b><span>Equipe '+eu+(s.pergunta?' · pergunta '+(s.idx+1)+' de '+s.total+' · '+(s.pergunta.tema==='seguranca'?'Segurança':'Processo'):'')+'</span></div></div>'
+      + (timer ? '<span class="timer-eq pisca" id="tempoEq">'+tempo+'</span>' : '')
+      + (btnDesafio ? '<button class="btn-desafio" data-act="desafiar" '+(podeDesafiar?'':'disabled')+' aria-label="Desafiar a outra equipe"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="12" height="17" rx="2" transform="rotate(-8 11 11)"/><path d="M13 8 l-3 4 h4 l-3 4"/></svg>DESAFIAR <em>'+(me.desafioUsado?'0':'1')+'</em></button>' : '<span></span>')
+      + '</div>';
+  };
+  if (s.fase === 'lobby' || s.fase === 'contagem') {
+    h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'encarando')+'<p class="grande" style="color:'+cor+'">VOCÊS SÃO '+nome+'!</p>'
+      + (s.fase === 'lobby' ? '<p class="sub pisca">Aguardando a outra equipe entrar…</p>' : '<p class="sub">O jogo começa em <b class="bung" id="tempoEq" style="color:var(--am);font-size:28px">'+tempo+'</b></p>')
+      + '<p class="sub">Olhem para a TV!</p></div>';
+  } else if (s.fase === 'final') {
+    h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'festa')+'<p class="grande" style="color:var(--am)">FIM DE JOGO!</p><p class="sub">Olhem para a TV. Obrigado por jogar!</p></div>';
+  } else if (d) {
+    var de = esc(s.equipes[d.de].nome).toUpperCase(), para = esc(s.equipes[d.para].nome).toUpperCase();
+    if (d.de === eu) {
+      if (d.etapa === 'escolhendo') h = '<div class="centro-eq"><span class="bung" style="color:var(--rosa);font-size:22px">MODO DESAFIO</span><p class="grande">Escolham uma carta para<br>desafiar '+para+'</p><div class="cartas3">'+[0,1,2].slice(0, d.cartas.length).map(function(n){ return cartaHTML('', 'min(19vw,230px)', 'button', 'data-act="carta" data-n="'+n+'" aria-label="Carta '+(n+1)+'"'); }).join('')+'</div><button class="link" data-act="cancelar">Voltar sem desafiar</button></div>';
+      else if (d.etapa === 'resultado') h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,d.acertou?'':'ri')+'<p class="grande">'+(d.acertou ? para+' ACERTARAM O DESAFIO!' : para+' NÃO ACERTARAM!')+'</p><p class="sub">O jogo já vai continuar.</p></div>';
+      else h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'ri')+'<p class="grande" style="color:var(--rosa)">CARTA ENVIADA!</p><p class="sub">Agora é com '+para+'. '+(d.etapa==='respondendo'?'Tempo: <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:28px">'+tempo+'</b>':'Olhem para a TV!')+'</p></div>';
+    } else {
+      if (d.etapa === 'escolhendo') h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'susto')+'<p class="grande pisca" style="color:var(--rosa)">'+de+' VÃO DESAFIAR VOCÊS!</p><p class="sub">Preparem-se… o jogo está pausado.</p></div>';
+      else if (d.etapa === 'carta') h = '<div class="centro-eq"><p class="grande pisca" style="color:var(--rosa)">'+de+' DESAFIARAM VOCÊS!</p><p class="sub">O jogo está pausado nas 3 telas até vocês responderem.</p><div class="pisca">'+cartaHTML('', 'min(26vh,250px)', 'button', 'data-act="abrir" aria-label="Abrir a carta"')+'</div><p class="bung" style="font-size:26px;margin:0">TOQUE NA CARTA PARA ABRIR</p></div>';
+      else if (d.etapa === 'lendo') h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="sub">LEIAM! <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:44px">'+tempo+'</b></span></div><div style="display:flex;gap:24px;align-items:center">'+cartaHTML('abrindo','90px')+'<div class="pergunta-eq">'+esc(d.pergunta.texto)+'</div></div>'+altsEq(d.pergunta.alts,'respd',true,-1,-1);
+      else if (d.etapa === 'respondendo') {
+        var travou = E.minhaD !== undefined;
+        h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca" id="tempoEq">'+tempo+'</span></div><div class="pergunta-eq">'+esc(d.pergunta.texto)+'</div>'+altsEq(d.pergunta.alts,'respd',travou,travou?E.minhaD:-1,-1)+(travou?'<div class="aviso-env">Resposta enviada!</div>':'');
+      } else {
+        h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,d.acertou?'feliz':'triste')+'<p class="grande" style="color:'+(d.acertou?'var(--ok)':'#FF4D6D')+'">'+(d.acertou?'ACERTARAM! +3 DEGRAUS':'NÃO FOI DESSA VEZ · −3')+'</p></div>'+altsEq(d.pergunta.alts,'x',true,-1,d.pergunta.correta);
+      }
+    }
+  } else if (s.fase === 'pergunta') {
+    var minha = s.respostas[eu] !== null ? s.respostas[eu] : E.minha[s.idx], respondeu = minha !== undefined && minha !== null;
+    h = topo(true, true) + '<div class="pergunta-eq">'+esc(s.pergunta.texto)+'</div>' + altsEq(s.pergunta.alts, 'resp', respondeu, respondeu?minha:-1, -1)
+      + (respondeu ? '<div class="aviso-env">Resposta enviada! Aguardando '+nOut+'…</div>' : '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p>');
+  } else if (s.fase === 'revelacao') {
+    var ok = s.resultado[eu];
+    h = topo(false, true) + '<div style="display:flex;align-items:center;gap:20px;justify-content:center">'+avatarHTML(me.avatar,0,ok?'feliz':'triste','120px')+'<p class="grande" style="color:'+(ok?'var(--ok)':'#FF4D6D')+'">'+(ok?'ACERTARAM! +1':'NÃO FOI DESSA VEZ')+'</p></div>'
+      + '<div class="pergunta-eq">'+esc(s.pergunta.texto)+'</div>' + altsEq(s.pergunta.alts, 'x', true, s.respostas[eu] === null ? -1 : s.respostas[eu], s.pergunta.correta)
+      + '<p class="sub" style="text-align:center;margin:0">Próxima pergunta em <b class="bung" id="tempoEq" style="color:var(--am)">'+tempo+'</b></p>';
+  }
+  $('#eqTela').innerHTML = h;
+  if (!d) E.minhaD = undefined;
+}
+
+/* =========================================================
+   ADMIN — banco de perguntas (fica salvo no Supabase)
+   ========================================================= */
+var ADM = { lista: [], filtro: 'todas', editando: null };
+function initAdmin(){
+  sb.auth.getSession().then(function(r){ if (r.data && r.data.session) painelAdmin(); else loginAdmin(); });
+}
+function loginAdmin(msg){
+  $('#app').innerHTML = '<form class="login caixa" id="fLogin"><h2 class="bung" style="color:var(--am);font-weight:400;font-size:24px">ADMIN · ENTRAR</h2>'+(msg?'<div class="erro">'+esc(msg)+'</div>':'')
+    + '<div class="campo"><label for="em">E-mail</label><input id="em" type="email" required autocomplete="username"></div>'
+    + '<div class="campo"><label for="se">Senha</label><input id="se" type="password" required autocomplete="current-password"></div>'
+    + '<button class="btn">Entrar</button><a href="#" style="color:var(--sub);text-align:center">Voltar</a></form>';
+  $('#fLogin').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    sb.auth.signInWithPassword({ email: $('#em').value, password: $('#se').value }).then(function(r){
+      if (r.error) loginAdmin('E-mail ou senha incorretos.'); else painelAdmin();
+    });
+  });
+}
+function painelAdmin(){
+  $('#app').innerHTML = '<div class="adm"><div class="adm-topo"><div><h1>EQUIPE x EQUIPE · ADMIN</h1><span style="color:var(--sub);font-size:14px">Banco de perguntas (fica salvo). As partidas não ficam salvas.</span></div>'
+    + '<div style="display:flex;gap:10px"><a class="btn" href="#tv" target="_blank" style="text-decoration:none;font-family:Bungee,sans-serif;font-weight:400">ABRIR A TV</a><button class="btn sec" id="bSair">Sair</button></div></div>'
+    + '<div id="contagem" style="color:var(--sub)"></div><div class="adm-grid"><div class="caixa" id="lista"></div><form class="caixa" id="fPerg"></form></div></div>';
+  $('#bSair').onclick = function(){ sb.auth.signOut().then(function(){ loginAdmin(); }); };
+  $('#lista').addEventListener('click', function(ev){
+    var b = ev.target.closest('button'); if (!b) return;
+    if (b.getAttribute('data-f')) { ADM.filtro = b.getAttribute('data-f'); renderLista(); }
+    var id = b.getAttribute('data-ed'); if (id) { ADM.editando = ADM.lista.filter(function(p){ return p.id === id; })[0]; renderForm(); window.scrollTo(0,0); }
+    id = b.getAttribute('data-del');
+    if (id && confirm('Excluir esta pergunta?')) sb.from('perguntas').delete().eq('id', id).then(function(r){ if (r.error) alert(r.error.message); carregar(); });
+  });
+  renderForm(); carregar();
+}
+function carregar(){
+  sb.from('perguntas').select('*').order('created_at', { ascending: false }).then(function(r){
+    if (r.error) { $('#lista').innerHTML = '<div class="erro">'+esc(r.error.message)+'</div>'; return; }
+    ADM.lista = r.data || []; renderLista();
+  });
+}
+function renderLista(){
+  var n = ADM.lista.filter(function(p){ return p.tipo === 'normal'; }).length, dd = ADM.lista.length - n;
+  $('#contagem').innerHTML = '<b style="color:var(--am)">'+n+'</b> normais · <b style="color:var(--rosa)">'+dd+'</b> desafio'
+    + (n < PERGUNTAS_POR_PARTIDA ? ' · <span style="color:#FFC2CE">cadastre pelo menos '+PERGUNTAS_POR_PARTIDA+' normais para a partida ter '+PERGUNTAS_POR_PARTIDA+' perguntas</span>' : '')
+    + (dd < 6 ? ' · <span style="color:#FFC2CE">recomendado: pelo menos 6 de desafio (3 cartas para cada equipe)</span>' : '');
+  var itens = ADM.lista.filter(function(p){ return ADM.filtro === 'todas' || p.tipo === ADM.filtro; });
+  $('#lista').innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>Perguntas cadastradas</h2><div class="filtros">'
+    + [['todas','TODAS'],['normal','NORMAL'],['desafio','DESAFIO']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(ADM.filtro===f[0]?'sel':'')+'">'+f[1]+'</button>'; }).join('') + '</div></div>'
+    + (itens.length ? itens.map(function(p){
+        return '<div class="linha-q"><span class="tag '+(p.tipo==='normal'?'n':'d')+'">'+p.tipo.toUpperCase()+'</span><span style="color:var(--sub)">'+(p.tema==='seguranca'?'Segurança':'Processo')+'</span>'
+          + '<span>'+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
+      : '<p style="color:var(--sub)">Nenhuma pergunta ainda.</p>');
+}
+function renderForm(){
+  var p = ADM.editando || { tipo: 'normal', tema: 'processo', pergunta: '', alternativas: ['', '', '', ''], correta: 0 };
+  $('#fPerg').innerHTML = '<h2>'+(ADM.editando ? 'Editar pergunta' : 'Nova pergunta')+'</h2>'
+    + '<div class="dupla"><div class="campo"><label for="ti">Tipo</label><select id="ti"><option value="normal">Normal (20s)</option><option value="desafio">Desafio (3s + 8s)</option></select></div>'
+    + '<div class="campo"><label for="te">Tema</label><select id="te"><option value="processo">Processo</option><option value="seguranca">Segurança do trabalho</option></select></div></div>'
+    + '<div class="campo"><label for="pe">Pergunta</label><textarea id="pe" rows="3" required style="resize:vertical">'+esc(p.pergunta)+'</textarea></div>'
+    + '<label>Alternativas (marque a certa)</label>'
+    + [0,1,2,3].map(function(i){ return '<div class="alt-linha"><input type="radio" name="ce" value="'+i+'" id="ce'+i+'" '+(p.correta===i?'checked':'')+'><label for="ce'+i+'"><b>'+LET[i]+'</b></label><input id="al'+i+'" required aria-label="Alternativa '+LET[i]+'" value="'+esc(p.alternativas[i]||'')+'"></div>'; }).join('')
+    + '<div id="msgF"></div><button class="btn verde">'+(ADM.editando ? 'Salvar alterações' : 'Salvar pergunta')+'</button>'
+    + (ADM.editando ? '<button type="button" class="btn sec" id="bCanc">Cancelar edição</button>' : '');
+  $('#ti').value = p.tipo; $('#te').value = p.tema;
+  if ($('#bCanc')) $('#bCanc').onclick = function(){ ADM.editando = null; renderForm(); };
+  $('#fPerg').onsubmit = function(ev){
+    ev.preventDefault();
+    var dados = { tipo: $('#ti').value, tema: $('#te').value, pergunta: $('#pe').value.trim(),
+      alternativas: [0,1,2,3].map(function(i){ return $('#al'+i).value.trim(); }), correta: +document.querySelector('input[name=ce]:checked').value };
+    var q = ADM.editando ? sb.from('perguntas').update(dados).eq('id', ADM.editando.id) : sb.from('perguntas').insert(dados);
+    q.then(function(r){
+      if (r.error) { $('#msgF').innerHTML = '<div class="erro">'+esc(r.error.message)+'</div>'; return; }
+      ADM.editando = null; renderForm(); carregar();
+    });
+  };
+}
+iniciar();
+</script>
+</body>
+</html>

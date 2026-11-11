@@ -410,25 +410,30 @@ function initTV(){
     banco.desafio = rows.filter(function(p){ return p.tipo === 'desafio'; });
     if (!banco.normal.length) { $('#app').innerHTML = '<div class="home"><div class="erro">Nenhuma pergunta normal cadastrada. Cadastre pela tela Admin.</div><a class="btn" href="#admin" style="text-decoration:none">Ir para o Admin</a></div>'; return; }
     filaPerg = shuffle(banco.normal).slice(0, PERGUNTAS_POR_PARTIDA);
-    pedirCodigoTV();
+    sb.from('config').select('valor').eq('chave', 'codigo_sala').then(function(rc){
+      var v = (!rc.error && rc.data && rc.data[0]) ? limpaCod(rc.data[0].valor) : '';
+      if (v) iniciarSala(v); else pedirCodigoTV();
+    });
   });
 }
 function limpaCod(c){ return String(c || '').trim().toLowerCase().replace(/[^a-z0-9]/g, ''); }
 function campoCodigo(id, extra){ return '<input id="'+id+'" required maxlength="10" autocomplete="off" class="bung" style="letter-spacing:5px;font-size:24px;text-transform:uppercase'+(extra||'')+'" placeholder="EX.: 1234">'; }
 function pedirCodigoTV(){
   $('#app').innerHTML = '<form class="home" id="fSala"><h1>EQUIPE <b>x</b> EQUIPE</h1><div class="caixa" style="width:min(460px,90vw)"><label for="codTV">CÓDIGO DA SALA</label>'+campoCodigo('codTV')
-    + '<span style="color:var(--sub);font-size:14px">Digite o mesmo código na TV, nos notebooks e no Admin. Letras e números.</span><button class="btn">CRIAR SALA</button></div></form>';
+    + '<span style="color:var(--sub);font-size:14px">Nenhum código definido no Admin. Digite um código (o mesmo dos notebooks).</span><button class="btn">CRIAR SALA</button></div></form>';
   $('#codTV').focus();
   $('#fSala').onsubmit = function(ev){
     ev.preventDefault();
     var sala = limpaCod($('#codTV').value); if (!sala) return;
-    telaCheia();
+    telaCheia(); iniciarSala(sala);
+  };
+}
+function iniciarSala(sala){
     S = { sala: sala, fase: 'lobby', equipes: { A: null, B: null }, idx: -1, total: filaPerg.length, pergunta: null,
           respostas: { A: null, B: null }, resultado: null, tempo: 0, desafio: null, temDesafio: banco.desafio.length > 0 };
     montarTV();
     abrirCanal(sala, onMsgTV).then(function(ch){ chTV = ch; publicar(); setInterval(tick, 1000); });
     renderTV();
-  };
 }
 
 function pub(){
@@ -803,7 +808,7 @@ function loginAdmin(msg){
 function painelAdmin(){
   $('#app').innerHTML = '<div class="adm"><div class="adm-topo"><div><h1>EQUIPE x EQUIPE · ADMIN</h1><span style="color:var(--sub);font-size:14px">Banco de perguntas (fica salvo). As partidas não ficam salvas.</span></div>'
     + '<div style="display:flex;gap:10px"><a class="btn" href="#tv" target="_blank" style="text-decoration:none;font-family:Bungee,sans-serif;font-weight:400">ABRIR A TV</a><button class="btn sec" id="bSair">Sair</button></div></div>'
-    + '<form class="caixa" id="fEspiar"><h2>Acompanhar a partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="campo" style="width:220px"><label for="codEsp">CÓDIGO DA SALA</label>'+campoCodigo('codEsp',';font-size:20px')+'</div><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="espiarArea"></div></form>'
+    + '<form class="caixa" id="fEspiar"><h2>Código da sala e partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="campo" style="width:220px"><label for="codEsp">CÓDIGO DA SALA</label>'+campoCodigo('codEsp',';font-size:20px')+'</div><button type="button" class="btn verde" id="bSalvaCod">Salvar código</button><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="msgCod" style="color:var(--sub);font-size:14px">A TV usa esse código sozinha. Os notebooks digitam o mesmo código para entrar.</div><div id="espiarArea"></div></form>'
     + '<div id="contagem" style="color:var(--sub)"></div><div class="adm-grid"><div class="caixa" id="lista"></div><form class="caixa" id="fPerg"></form></div></div>';
   $('#bSair').onclick = function(){ sb.auth.signOut().then(function(){ loginAdmin(); }); };
   $('#lista').addEventListener('click', function(ev){
@@ -815,6 +820,17 @@ function painelAdmin(){
     id = b.getAttribute('data-del');
     if (id && confirm('Excluir esta pergunta?')) sb.from('perguntas').delete().eq('id', id).then(function(r){ if (r.error) alert(r.error.message); carregar(); });
   });
+  sb.from('config').select('valor').eq('chave', 'codigo_sala').then(function(rc){
+    if (rc.error) { $('#msgCod').innerHTML = '<span style="color:#FFC2CE">Falta criar a tabela de configuração no Supabase (rode o SQL que o Claude mandou).</span>'; return; }
+    if (rc.data && rc.data[0]) $('#codEsp').value = rc.data[0].valor;
+  });
+  $('#bSalvaCod').onclick = function(){
+    var c = limpaCod($('#codEsp').value); if (!c) { $('#codEsp').focus(); return; }
+    sb.from('config').upsert({ chave: 'codigo_sala', valor: c }).then(function(r){
+      $('#msgCod').innerHTML = r.error ? '<span style="color:#FFC2CE">Erro ao salvar: '+esc(r.error.message)+'</span>'
+        : '<span style="color:var(--ok)">Código salvo! Abra (ou recarregue) a TV e ela já entra na sala '+esc(c.toUpperCase())+'.</span>';
+    });
+  };
   $('#fEspiar').onsubmit = function(ev){
     ev.preventDefault();
     var c = limpaCod($('#codEsp').value); if (!c) return;

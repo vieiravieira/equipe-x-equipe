@@ -199,6 +199,11 @@ body.espiao #eqTela{pointer-events:none}
 .perg-img img{max-height:30vh;max-width:45%;object-fit:contain;border-radius:16px;background:#fff;flex-shrink:0}
 .miniimg{width:44px;height:44px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px;background:#fff}
 .prev-img{max-width:100%;max-height:180px;object-fit:contain;border-radius:12px;background:#fff;align-self:flex-start}
+/* prévia */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
+.modal .barra{width:min(92vw,1100px);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.modal .tela{position:relative;width:min(92vw,1100px);aspect-ratio:16/10;border:3px solid var(--linha);border-radius:16px;overflow:hidden}
+.modal .tela > div{position:absolute;top:0;left:0;width:1280px;height:800px;transform-origin:0 0;pointer-events:none}
 /* ---------- ADMIN ---------- */
 .espiar-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .espiar-box{display:flex;flex-direction:column;gap:8px}
@@ -762,6 +767,8 @@ function painelAdmin(){
   $('#lista').addEventListener('click', function(ev){
     var b = ev.target.closest('button'); if (!b) return;
     if (b.getAttribute('data-f')) { ADM.filtro = b.getAttribute('data-f'); renderLista(); }
+    var idv = b.getAttribute('data-ver');
+    if (idv) { var pv = ADM.lista.filter(function(x){ return x.id === idv; })[0]; abrirPrevia({ tipo: pv.tipo, tema: pv.tema, texto: pv.pergunta, img: pv.imagem_url, alts: pv.alternativas, correta: pv.correta }); }
     var id = b.getAttribute('data-ed'); if (id) { ADM.editando = ADM.lista.filter(function(p){ return p.id === id; })[0]; renderForm(); window.scrollTo(0,0); }
     id = b.getAttribute('data-del');
     if (id && confirm('Excluir esta pergunta?')) sb.from('perguntas').delete().eq('id', id).then(function(r){ if (r.error) alert(r.error.message); carregar(); });
@@ -798,7 +805,7 @@ function renderLista(){
     + [['todas','TODAS'],['normal','NORMAL'],['desafio','DESAFIO']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(ADM.filtro===f[0]?'sel':'')+'">'+f[1]+'</button>'; }).join('') + '</div></div>'
     + (itens.length ? itens.map(function(p){
         return '<div class="linha-q"><span class="tag '+(p.tipo==='normal'?'n':'d')+'">'+p.tipo.toUpperCase()+'</span><span style="color:var(--sub)">'+(p.tema==='seguranca'?'Segurança':'Processo')+'</span>'
-          + '<span>'+(p.imagem_url?'<img class="miniimg" src="'+esc(p.imagem_url)+'" alt="">':'')+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
+          + '<span>'+(p.imagem_url?'<img class="miniimg" src="'+esc(p.imagem_url)+'" alt="">':'')+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ver="'+p.id+'">Ver</button><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
       : '<p style="color:var(--sub)">Nenhuma pergunta ainda.</p>');
 }
 // reduz a foto (máx. 1280px) antes de enviar, para carregar rápido na TV
@@ -822,6 +829,29 @@ function subirImagem(f){
     img.src = URL.createObjectURL(f);
   });
 }
+function previaHTML(p, certa){
+  var des = p.tipo === 'desafio', tema = p.tema === 'seguranca' ? 'Segurança' : 'Processo';
+  var topo = des
+    ? '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca">8</span></div>'
+    : '<div class="topo-eq"><div class="quem">'+avatarHTML('lobo',0,'encarando')+'<div><b style="color:var(--a)">LOBOS</b><span>Equipe A · pergunta 1 de 10 · '+tema+'</span></div></div><span class="timer-eq pisca">20</span><span class="btn-desafio">DESAFIAR <em>1</em></span></div>';
+  return '<div class="eq'+(des?' modo-desafio':'')+'" style="min-height:0;height:800px;max-width:none;margin:0;background:'+(des?'radial-gradient(circle at 50% 45%,#4A0A2A 0%,#14040C 75%)':'var(--bg)')+'">'
+    + topo + pergEq(p) + altsEq(p.alts, 'x', false, -1, certa ? p.correta : -1)
+    + '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p></div>';
+}
+function abrirPrevia(p){
+  var m = document.createElement('div'), certa = false;
+  m.className = 'modal';
+  var desenha = function(){
+    m.innerHTML = '<div class="barra"><b class="bung" style="font-size:20px;color:var(--am)">PRÉVIA · TELA DO NOTEBOOK'+(p.tipo==='desafio'?' (DESAFIO)':'')+'</b><div style="display:flex;gap:8px"><button type="button" class="btn sec" data-m="certa">'+(certa?'Esconder':'Mostrar')+' resposta certa</button><button type="button" class="btn" data-m="fechar">Fechar</button></div></div><div class="tela"><div>'+previaHTML(p, certa)+'</div></div>';
+    var t = m.querySelector('.tela'); t.firstChild.style.transform = 'scale(' + (t.clientWidth / 1280) + ')';
+  };
+  m.addEventListener('click', function(ev){
+    var b = ev.target.closest('[data-m]');
+    if (ev.target === m || (b && b.getAttribute('data-m') === 'fechar')) { m.remove(); return; }
+    if (b) { certa = !certa; desenha(); }
+  });
+  document.body.appendChild(m); desenha();
+}
 function renderForm(){
   var p = ADM.editando || { tipo: 'normal', tema: 'processo', pergunta: '', alternativas: ['', '', '', ''], correta: 0 };
   $('#fPerg').innerHTML = '<h2>'+(ADM.editando ? 'Editar pergunta' : 'Nova pergunta')+'</h2>'
@@ -831,7 +861,7 @@ function renderForm(){
     + '<div class="campo"><label for="im">Imagem (opcional)</label><input id="im" type="file" accept="image/*"><div id="prevImg" style="display:flex;flex-direction:column;gap:8px">'+(p.imagem_url?'<img class="prev-img" src="'+esc(p.imagem_url)+'" alt="Imagem atual"><button type="button" class="btn sec" id="bTiraImg">Remover imagem</button>':'')+'</div></div>'
     + '<label>Alternativas (marque a certa)</label>'
     + [0,1,2,3].map(function(i){ return '<div class="alt-linha"><input type="radio" name="ce" value="'+i+'" id="ce'+i+'" '+(p.correta===i?'checked':'')+'><label for="ce'+i+'"><b>'+LET[i]+'</b></label><input id="al'+i+'" required aria-label="Alternativa '+LET[i]+'" value="'+esc(p.alternativas[i]||'')+'"></div>'; }).join('')
-    + '<div id="msgF"></div><button class="btn verde">'+(ADM.editando ? 'Salvar alterações' : 'Salvar pergunta')+'</button>'
+    + '<div id="msgF"></div><button type="button" class="btn sec" id="bPrev">Pré-visualizar na tela</button><button class="btn verde">'+(ADM.editando ? 'Salvar alterações' : 'Salvar pergunta')+'</button>'
     + (ADM.editando ? '<button type="button" class="btn sec" id="bCanc">Cancelar edição</button>' : '');
   $('#ti').value = p.tipo; $('#te').value = p.tema;
   ADM.imgAtual = p.imagem_url || null; ADM.arquivo = null;
@@ -840,6 +870,12 @@ function renderForm(){
     $('#prevImg').innerHTML = f ? '<img class="prev-img" src="'+URL.createObjectURL(f)+'" alt="Prévia">' : '';
   };
   if ($('#bTiraImg')) $('#bTiraImg').onclick = function(){ ADM.imgAtual = null; $('#prevImg').innerHTML = '<span style="color:var(--sub)">A imagem será removida ao salvar.</span>'; };
+  $('#bPrev').onclick = function(){
+    var ce = document.querySelector('input[name=ce]:checked');
+    abrirPrevia({ tipo: $('#ti').value, tema: $('#te').value, texto: $('#pe').value.trim() || '(escreva a pergunta)',
+      img: ADM.arquivo ? URL.createObjectURL(ADM.arquivo) : ADM.imgAtual,
+      alts: [0,1,2,3].map(function(i){ return $('#al'+i).value.trim() || '(alternativa '+LET[i]+')'; }), correta: ce ? +ce.value : 0 });
+  };
   if ($('#bCanc')) $('#bCanc').onclick = function(){ ADM.editando = null; renderForm(); };
   $('#fPerg').onsubmit = function(ev){
     ev.preventDefault();

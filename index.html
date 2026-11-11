@@ -191,6 +191,8 @@ button.carta{cursor:pointer}
 .aviso-env{background:var(--card);border:2px solid var(--am);border-radius:16px;padding:14px 18px;text-align:center;font-weight:800;font-size:18px}
 
 body.espiao #eqTela{pointer-events:none}
+.btn-cheia{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--card2);color:#fff;border:2px solid var(--linha);border-radius:12px;padding:10px 16px;font-weight:800;font-size:14px;cursor:pointer;opacity:.85}
+.btn-cheia:hover{opacity:1;border-color:var(--am)}
 /* imagens das perguntas */
 .com-img{display:flex;gap:2.4vh;align-items:center}
 .com-img .qimg{height:30vh;max-width:34vw;object-fit:contain;border-radius:1.6vh;background:#fff;flex-shrink:0}
@@ -521,6 +523,7 @@ function montarTV(){
     + '<header class="tv-top"><div class="nm a" id="nmA"></div><div class="rodada" id="rodada"></div><div class="nm b" id="nmB"></div></header>'
     + '<main class="arena"><div class="lado"><div id="slotA"></div><div class="degraus" id="dgA"></div></div><div class="centro" id="centro"></div><div class="lado"><div id="slotB"></div><div class="degraus" id="dgB"></div></div></main>'
     + '<section class="painel" id="painel"></section><div class="tela-cheia" id="cheia"></div></div>';
+  botaoTelaCheia();
 }
 function estadoAvatar(e){
   var d = S.desafio;
@@ -645,6 +648,7 @@ function initEquipe(){
   });
   $('#fEntrar').addEventListener('submit', function(ev){
     ev.preventDefault();
+    telaCheia();
     var cod = $('#cod').value.trim(), nome = $('#nome').value.trim();
     if (!/^\d{4}$/.test(cod) || !nome) return;
     $('#bEntrar').disabled = true; $('#bEntrar').textContent = 'ENTRANDO…'; $('#msgErro').innerHTML = '';
@@ -664,6 +668,19 @@ function initEspiar(sala, eq){
   $('#eqTela').innerHTML = '<div class="centro-eq"><p class="sub pisca">Conectando na sala '+esc(sala)+'…</p></div>';
   abrirCanal(sala, onMsgEq).then(function(ch){ E.ch = ch; enviar(ch, { t: 'ola' }); });
 }
+function telaCheia(){
+  var el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!f || document.fullscreenElement || document.webkitFullscreenElement) return;
+  try { var r = f.call(el); if (r && r.catch) r.catch(function(){}); } catch (e) {}
+}
+function botaoTelaCheia(){
+  if (E.espiao || $('#bCheia')) return;
+  var b = document.createElement('button');
+  b.id = 'bCheia'; b.className = 'btn-cheia'; b.type = 'button'; b.textContent = 'Tela cheia';
+  b.onclick = telaCheia; document.body.appendChild(b);
+  var at = function(){ b.style.display = (document.fullscreenElement || document.webkitFullscreenElement) ? 'none' : ''; };
+  document.addEventListener('fullscreenchange', at); document.addEventListener('webkitfullscreenchange', at); at();
+}
 function erroEntrar(msg){
   var b = $('#bEntrar'); if (!b) return;
   $('#msgErro').innerHTML = '<div class="erro">'+esc(msg)+'</div>'; b.disabled = false; b.textContent = 'ENTRAR NA SALA';
@@ -681,6 +698,7 @@ function onMsgEq(m){
 }
 function montarEq(){
   $('#app').innerHTML = '<div class="eq" id="eqTela"></div>';
+  botaoTelaCheia();
   $('#eqTela').addEventListener('click', function(ev){
     var b = ev.target.closest('[data-act]'); if (!b || b.disabled || E.espiao) return;
     var a = b.getAttribute('data-act'), s = E.s;

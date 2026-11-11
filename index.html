@@ -49,7 +49,15 @@ label{font-size:13px;font-weight:600;color:var(--sub);letter-spacing:1px}
 @keyframes rosna{0%,78%,100%{transform:scale(1)}84%,92%{transform:scale(1.3,1.55)}}
 .av.nervoso .corpo{animation:treme .13s linear infinite}
 @keyframes treme{0%,100%{transform:translateX(0)}25%{transform:translateX(-3%)}75%{transform:translateX(3%)}}
-.av.feliz{animation:pulo .7s ease-out 3}
+.av.feliz{animation:heroi 1.8s cubic-bezier(.3,1.4,.5,1) 1}
+@keyframes heroi{0%{transform:translateY(0) rotate(0) scale(1)}15%{transform:translateY(4%) scale(1.05,.9)}45%{transform:translateY(-22%) rotate(360deg) scale(1.25)}60%{transform:translateY(-22%) rotate(720deg) scale(1.3)}80%{transform:translateY(-6%) rotate(720deg) scale(1.12)}100%{transform:translateY(0) rotate(720deg) scale(1)}}
+.av .ritmo{position:relative;z-index:1}
+.av.feliz::before,.av.feliz::after{content:'';position:absolute;border-radius:50%;pointer-events:none;z-index:0}
+.av.feliz::before{inset:-30%;background:radial-gradient(circle,rgba(255,214,10,.6) 0%,rgba(255,214,10,.15) 45%,transparent 68%);animation:aura 1.8s ease-out 1 forwards}
+.av.feliz::after{inset:5%;border:.6vh solid #FFD60A;animation:onda .6s ease-out .5s 4 both}
+@keyframes aura{0%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(1.2)}100%{opacity:0;transform:scale(1.4)}}
+@keyframes onda{0%{opacity:1;transform:scale(.6)}100%{opacity:0;transform:scale(1.9)}}
+.av.feliz .corpo{filter:drop-shadow(0 0 2vh rgba(255,214,10,.9))}
 .av.festa{animation:pulo 1.1s ease-in-out infinite}
 @keyframes pulo{0%,100%{transform:translateY(0)}40%{transform:translateY(-18%) scale(1.06)}70%{transform:translateY(0) scale(1.08,.92)}}
 .av.feliz .p-olhos,.av.festa .p-olhos{animation:none;transform:scaleY(.25)}

@@ -190,7 +190,12 @@ button.carta{cursor:pointer}
 .link{background:none;border:0;color:var(--sub);text-decoration:underline;font-size:16px;font-weight:600;cursor:pointer;padding:10px}
 .aviso-env{background:var(--card);border:2px solid var(--am);border-radius:16px;padding:14px 18px;text-align:center;font-weight:800;font-size:18px}
 
+body.espiao #eqTela{pointer-events:none}
 /* ---------- ADMIN ---------- */
+.espiar-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.espiar-box{display:flex;flex-direction:column;gap:8px}
+.espiar-frame{position:relative;width:100%;aspect-ratio:16/10;border:2px solid var(--linha);border-radius:14px;overflow:hidden;background:#000}
+.espiar-frame iframe{position:absolute;top:0;left:0;width:1280px;height:800px;border:0;transform-origin:0 0}
 .adm{max-width:1280px;margin:0 auto;padding:28px clamp(16px,3vw,40px);display:flex;flex-direction:column;gap:20px}
 .adm-topo{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .adm-topo h1{font-family:Bungee,sans-serif;font-weight:400;font-size:28px;margin:0;color:var(--am)}
@@ -346,6 +351,7 @@ if (!falta) {
 if (falta) {
   $('#app').innerHTML = '<div class="home"><div class="erro">Falta configurar o Supabase: abra o arquivo index.html e cole a URL e a anon key no começo do código.</div></div>';
 } else if (modo === 'tv') initTV();
+else if (modo.indexOf('espiar-') === 0) initEspiar(modo.split('-')[1], modo.split('-')[2]);
 else if (modo === 'equipe') initEquipe();
 else if (modo === 'admin') initAdmin();
 else initHome();
@@ -623,6 +629,13 @@ function initEquipe(){
     E._t = falhou;
   });
 }
+function initEspiar(sala, eq){
+  E.equipe = eq === 'B' ? 'B' : 'A'; E.ok = true; E.espiao = true;
+  document.body.classList.add('espiao');
+  montarEq();
+  $('#eqTela').innerHTML = '<div class="centro-eq"><p class="sub pisca">Conectando na sala '+esc(sala)+'…</p></div>';
+  abrirCanal(sala, onMsgEq).then(function(ch){ E.ch = ch; enviar(ch, { t: 'ola' }); });
+}
 function erroEntrar(msg){
   var b = $('#bEntrar'); if (!b) return;
   $('#msgErro').innerHTML = '<div class="erro">'+esc(msg)+'</div>'; b.disabled = false; b.textContent = 'ENTRAR NA SALA';
@@ -641,7 +654,7 @@ function onMsgEq(m){
 function montarEq(){
   $('#app').innerHTML = '<div class="eq" id="eqTela"></div>';
   $('#eqTela').addEventListener('click', function(ev){
-    var b = ev.target.closest('[data-act]'); if (!b || b.disabled) return;
+    var b = ev.target.closest('[data-act]'); if (!b || b.disabled || E.espiao) return;
     var a = b.getAttribute('data-act'), s = E.s;
     if (a === 'resp') { var alt = +b.getAttribute('data-i'); E.minha[s.idx] = alt; enviar(E.ch, { t: 'responder', equipe: E.equipe, idx: s.idx, alt: alt }); E.sig = ''; renderEq(); }
     else if (a === 'desafiar') enviar(E.ch, { t: 'desafiar', equipe: E.equipe });
@@ -658,6 +671,7 @@ function altsEq(alts, act, travado, minha, certa){
 }
 function renderEq(){
   var s = E.s, eu = E.equipe, ot = OUTRA(eu), me = s.equipes[eu], out = s.equipes[ot], d = s.desafio;
+  if (!me) { E.sig = ''; $('#eqTela').innerHTML = '<div class="centro-eq"><p class="grande" style="color:var(--sub)">EQUIPE '+eu+'</p><p class="sub pisca">Ainda não entrou na sala.</p></div>'; return; }
   document.body.classList.toggle('modo-desafio', !!d);
   var tempo = d ? d.tempo : s.tempo;
   var sig = s.fase + '|' + s.idx + '|' + (d ? d.etapa + d.de + (d.resposta === null ? '' : 'r') : '') + '|' + JSON.stringify(s.respostas) + '|' + me.desafioUsado + '|' + (E.minha[s.idx] === undefined ? '' : 'm') + (E.minhaD === undefined ? '' : 'd');
@@ -731,6 +745,7 @@ function loginAdmin(msg){
 function painelAdmin(){
   $('#app').innerHTML = '<div class="adm"><div class="adm-topo"><div><h1>EQUIPE x EQUIPE · ADMIN</h1><span style="color:var(--sub);font-size:14px">Banco de perguntas (fica salvo). As partidas não ficam salvas.</span></div>'
     + '<div style="display:flex;gap:10px"><a class="btn" href="#tv" target="_blank" style="text-decoration:none;font-family:Bungee,sans-serif;font-weight:400">ABRIR A TV</a><button class="btn sec" id="bSair">Sair</button></div></div>'
+    + '<form class="caixa" id="fEspiar"><h2>Acompanhar a partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="campo" style="width:180px"><label for="codEsp">CÓDIGO DA SALA (aparece na TV)</label><input id="codEsp" inputmode="numeric" maxlength="4" class="bung" style="letter-spacing:5px;font-size:20px"></div><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="espiarArea"></div></form>'
     + '<div id="contagem" style="color:var(--sub)"></div><div class="adm-grid"><div class="caixa" id="lista"></div><form class="caixa" id="fPerg"></form></div></div>';
   $('#bSair').onclick = function(){ sb.auth.signOut().then(function(){ loginAdmin(); }); };
   $('#lista').addEventListener('click', function(ev){
@@ -740,7 +755,21 @@ function painelAdmin(){
     id = b.getAttribute('data-del');
     if (id && confirm('Excluir esta pergunta?')) sb.from('perguntas').delete().eq('id', id).then(function(r){ if (r.error) alert(r.error.message); carregar(); });
   });
+  $('#fEspiar').onsubmit = function(ev){
+    ev.preventDefault();
+    var c = $('#codEsp').value.trim(); if (!/^\d{4}$/.test(c)) return;
+    var base = location.pathname;
+    $('#espiarArea').innerHTML = '<div class="espiar-grid">' + ['A','B'].map(function(e){
+      return '<div class="espiar-box"><b style="color:'+corEq(e)+'">Notebook da Equipe '+e+'</b><div class="espiar-frame"><iframe title="Tela da Equipe '+e+'" src="'+base+'#espiar-'+c+'-'+e+'"></iframe></div></div>'; }).join('') + '</div>';
+    $('#bFecharEsp').style.display = '';
+    ajustarEspiar();
+  };
+  $('#bFecharEsp').onclick = function(){ $('#espiarArea').innerHTML = ''; this.style.display = 'none'; };
+  window.addEventListener('resize', ajustarEspiar);
   renderForm(); carregar();
+}
+function ajustarEspiar(){
+  document.querySelectorAll('.espiar-frame').forEach(function(f){ var i = f.querySelector('iframe'); if (i) i.style.transform = 'scale(' + (f.clientWidth / 1280) + ')'; });
 }
 function carregar(){
   sb.from('perguntas').select('*').order('created_at', { ascending: false }).then(function(r){

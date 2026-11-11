@@ -168,7 +168,7 @@ button.carta{cursor:pointer}
 .btn-desafio{display:flex;align-items:center;gap:10px;background:var(--rosa);color:#0A0A0F;border:0;border-radius:16px;padding:12px 20px;font-family:Bungee,sans-serif;font-size:19px;cursor:pointer;min-height:56px}
 .btn-desafio:disabled{opacity:.35;cursor:not-allowed}
 .btn-desafio em{font-family:Inter,sans-serif;font-style:normal;font-weight:800;font-size:13px;background:#0A0A0F;color:var(--rosa);border-radius:99px;padding:3px 9px}
-.pergunta-eq{font-size:clamp(24px,3vw,38px);font-weight:800;line-height:1.25}
+.pergunta-eq{font-size:clamp(22px,2.5vw,32px);font-weight:800;line-height:1.25}
 .alts-eq{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .alts-eq button{background:var(--card);border:2px solid var(--linha);border-radius:18px;padding:22px 26px;display:flex;align-items:center;gap:18px;font-size:clamp(17px,2vw,23px);font-weight:600;color:#fff;cursor:pointer;min-height:100px;text-align:left}
 .alts-eq button b{font-family:Bungee,sans-serif;font-weight:400;font-size:32px;color:var(--am);min-width:40px}
@@ -193,9 +193,17 @@ button.carta{cursor:pointer}
 body.espiao #eqTela{pointer-events:none}
 /* imagens das perguntas */
 .com-img{display:flex;gap:2.4vh;align-items:center}
-.com-img .qimg{height:24vh;max-width:34vw;object-fit:contain;border-radius:1.6vh;background:#fff;flex-shrink:0}
+.com-img .qimg{height:30vh;max-width:34vw;object-fit:contain;border-radius:1.6vh;background:#fff;flex-shrink:0}
 .com-img .qcol{flex:1;display:flex;flex-direction:column;gap:1.6vh;min-width:0}
 .perg-img{display:flex;gap:22px;align-items:center}
+.lay-img{display:grid;grid-template-columns:minmax(0,48%) 1fr;gap:26px;align-items:center}
+.lay-img > img{width:100%;height:calc(100vh - 190px);max-height:640px;object-fit:contain;justify-self:center;filter:drop-shadow(0 6px 24px rgba(0,0,0,.5))}
+.lay-img .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.lay-img .pergunta-eq{font-size:clamp(19px,2vw,26px)}
+.lay-img .alts-eq{grid-template-columns:1fr;gap:10px}
+.lay-img .alts-eq button{min-height:62px;padding:12px 18px;font-size:clamp(15px,1.5vw,19px);gap:14px}
+.lay-img .alts-eq button b{font-size:24px;min-width:28px}
+.modal .lay-img > img{height:590px}
 .perg-img img{max-height:30vh;max-width:45%;object-fit:contain;border-radius:16px;background:#fff;flex-shrink:0}
 .miniimg{width:44px;height:44px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px;background:#fff}
 .prev-img{max-width:100%;max-height:180px;object-fit:contain;border-radius:12px;background:#fff;align-self:flex-start}
@@ -349,6 +357,10 @@ function cartaHTML(classes, cw, tag, attrs){
   return '<'+tag+' class="carta '+(classes||'')+'" style="--cw:'+cw+'" '+(attrs||'')+'><span class="verso"><span>?</span></span><span class="frente">PERGUNTA<br>DESAFIO</span></'+tag+'>';
 }
 function comImgTV(img, html){ return img ? '<div class="com-img"><img class="qimg" src="'+esc(img)+'" alt=""><div class="qcol">'+html+'</div></div>' : html; }
+function blocoEq(p, alts){
+  if (!p.img) return '<div class="pergunta-eq">'+esc(p.texto)+'</div>' + alts;
+  return '<div class="lay-img"><img src="'+esc(p.img)+'" alt="Imagem da pergunta"><div class="col"><div class="pergunta-eq">'+esc(p.texto)+'</div>'+alts+'</div></div>';
+}
 function pergEq(p){ return p.img ? '<div class="perg-img"><img src="'+esc(p.img)+'" alt="Imagem da pergunta"><div class="pergunta-eq">'+esc(p.texto)+'</div></div>' : '<div class="pergunta-eq">'+esc(p.texto)+'</div>'; }
 function degrausHTML(n, cor){ var h=''; for (var i=1;i<=10;i++) h += '<i style="'+(i<=n?'background:'+cor:'')+'"></i>'; return h; }
 
@@ -720,19 +732,19 @@ function renderEq(){
       else if (d.etapa === 'lendo') h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="sub">LEIAM! <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:44px">'+tempo+'</b></span></div><div style="display:flex;gap:24px;align-items:center">'+cartaHTML('abrindo','90px')+'<div class="pergunta-eq">'+esc(d.pergunta.texto)+'</div></div>'+(d.pergunta.img?'<div class="perg-img"><img src="'+esc(d.pergunta.img)+'" alt="Imagem da pergunta"></div>':'')+altsEq(d.pergunta.alts,'respd',true,-1,-1);
       else if (d.etapa === 'respondendo') {
         var travou = E.minhaD !== undefined;
-        h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca" id="tempoEq">'+tempo+'</span></div>'+pergEq(d.pergunta)+altsEq(d.pergunta.alts,'respd',travou,travou?E.minhaD:-1,-1)+(travou?'<div class="aviso-env">Resposta enviada!</div>':'');
+        h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca" id="tempoEq">'+tempo+'</span></div>'+blocoEq(d.pergunta, altsEq(d.pergunta.alts,'respd',travou,travou?E.minhaD:-1,-1))+(travou?'<div class="aviso-env">Resposta enviada!</div>':'');
       } else {
         h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,d.acertou?'feliz':'triste')+'<p class="grande" style="color:'+(d.acertou?'var(--ok)':'#FF4D6D')+'">'+(d.acertou?'ACERTARAM! +3 DEGRAUS':'NÃO FOI DESSA VEZ · −3')+'</p></div>'+altsEq(d.pergunta.alts,'x',true,-1,d.pergunta.correta);
       }
     }
   } else if (s.fase === 'pergunta') {
     var minha = s.respostas[eu] !== null ? s.respostas[eu] : E.minha[s.idx], respondeu = minha !== undefined && minha !== null;
-    h = topo(true, true) + pergEq(s.pergunta) + altsEq(s.pergunta.alts, 'resp', respondeu, respondeu?minha:-1, -1)
+    h = topo(true, true) + blocoEq(s.pergunta, altsEq(s.pergunta.alts, 'resp', respondeu, respondeu?minha:-1, -1))
       + (respondeu ? '<div class="aviso-env">Resposta enviada! Aguardando '+nOut+'…</div>' : '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p>');
   } else if (s.fase === 'revelacao') {
     var ok = s.resultado[eu];
     h = topo(false, true) + '<div style="display:flex;align-items:center;gap:20px;justify-content:center">'+avatarHTML(me.avatar,0,ok?'feliz':'triste','120px')+'<p class="grande" style="color:'+(ok?'var(--ok)':'#FF4D6D')+'">'+(ok?'ACERTARAM! +1':'NÃO FOI DESSA VEZ')+'</p></div>'
-      + pergEq(s.pergunta) + altsEq(s.pergunta.alts, 'x', true, s.respostas[eu] === null ? -1 : s.respostas[eu], s.pergunta.correta)
+      + blocoEq(s.pergunta, altsEq(s.pergunta.alts, 'x', true, s.respostas[eu] === null ? -1 : s.respostas[eu], s.pergunta.correta))
       + '<p class="sub" style="text-align:center;margin:0">Próxima pergunta em <b class="bung" id="tempoEq" style="color:var(--am)">'+tempo+'</b></p>';
   }
   $('#eqTela').innerHTML = h;
@@ -835,7 +847,7 @@ function previaHTML(p, certa){
     ? '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca">8</span></div>'
     : '<div class="topo-eq"><div class="quem">'+avatarHTML('lobo',0,'encarando')+'<div><b style="color:var(--a)">LOBOS</b><span>Equipe A · pergunta 1 de 10 · '+tema+'</span></div></div><span class="timer-eq pisca">20</span><span class="btn-desafio">DESAFIAR <em>1</em></span></div>';
   return '<div class="eq'+(des?' modo-desafio':'')+'" style="min-height:0;height:800px;max-width:none;margin:0;background:'+(des?'radial-gradient(circle at 50% 45%,#4A0A2A 0%,#14040C 75%)':'var(--bg)')+'">'
-    + topo + pergEq(p) + altsEq(p.alts, 'x', false, -1, certa ? p.correta : -1)
+    + topo + blocoEq(p, altsEq(p.alts, 'x', false, -1, certa ? p.correta : -1))
     + '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p></div>';
 }
 function abrirPrevia(p){

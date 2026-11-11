@@ -148,7 +148,7 @@ button.carta{cursor:pointer}
 /* ---------- EQUIPE ---------- */
 .eq{min-height:100vh;padding:28px clamp(16px,4vw,56px);display:flex;flex-direction:column;gap:22px;max-width:1280px;margin:0 auto}
 .eq h2{font-family:Bungee,sans-serif;font-weight:400;margin:0;font-size:clamp(26px,3.6vw,42px)}
-.campos{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:20px;align-items:end}
+.campos{display:grid;grid-template-columns:1fr 1.4fr;gap:20px;align-items:end}
 .campo{display:flex;flex-direction:column;gap:8px}
 .lado-btn{display:flex;gap:8px}
 .lado-btn button{flex:1;border-radius:12px;padding:14px;font-weight:800;font-size:17px;cursor:pointer;background:var(--card);border:2px solid var(--linha);color:#fff}
@@ -254,6 +254,7 @@ var CONFIG = {
 };
 
 var TEMPO_PERGUNTA = 20, TEMPO_REVELACAO = 5, TEMPO_LER_DESAFIO = 3, TEMPO_RESP_DESAFIO = 8, TEMPO_RESULT_DESAFIO = 4;
+var SALA = 'ssc8'; // sala fixa: TV, notebooks e Admin sempre usam a mesma
 var PERGUNTAS_POR_PARTIDA = 10, DEGRAU_INICIAL = 3, DEGRAU_MIN = 1, DEGRAU_MAX = 10;
 
 var sb = null;
@@ -410,7 +411,7 @@ function initTV(){
     banco.desafio = rows.filter(function(p){ return p.tipo === 'desafio'; });
     if (!banco.normal.length) { $('#app').innerHTML = '<div class="home"><div class="erro">Nenhuma pergunta normal cadastrada. Cadastre pela tela Admin.</div><a class="btn" href="#admin" style="text-decoration:none">Ir para o Admin</a></div>'; return; }
     filaPerg = shuffle(banco.normal).slice(0, PERGUNTAS_POR_PARTIDA);
-    var sala = String(Math.floor(1000 + Math.random() * 9000));
+    var sala = SALA;
     S = { sala: sala, fase: 'lobby', equipes: { A: null, B: null }, idx: -1, total: filaPerg.length, pergunta: null,
           respostas: { A: null, B: null }, resultado: null, tempo: 0, desafio: null, temDesafio: banco.desafio.length > 0 };
     montarTV();
@@ -552,7 +553,7 @@ function renderTV(){
         return '<div class="slot">'+avatarHTML(q.avatar, e==='A'?4:-4, 'encarando', '24vh')+'<b class="bung" style="font-size:3.4vh;color:'+corEq(e)+'">'+esc(q.nome).toUpperCase()+'</b><span style="color:'+corEq(e)+'">● entrou na sala</span></div>';
       };
       cheia.innerHTML = '<h1>EQUIPE <b>x</b> EQUIPE</h1><span style="color:var(--sub);letter-spacing:.3vh;font-size:2.2vh">PROCESSOS E SEGURANÇA DO TRABALHO</span>'
-        + '<div class="slots">'+slot('A')+'<div class="codigo"><span style="letter-spacing:.4vh;color:var(--sub)">CÓDIGO DA SALA</span><b>'+S.sala+'</b><span style="color:var(--sub)">Digite este código nos notebooks</span></div>'+slot('B')+'</div>'
+        + '<div class="slots">'+slot('A')+'<div class="codigo"><span style="letter-spacing:.4vh;color:var(--sub)">NOS NOTEBOOKS, ABRAM</span><b style="font-size:5vh;letter-spacing:.2vh">'+esc(location.host)+'/#equipe</b><span style="color:var(--sub)">e escolham o lado A ou B</span></div>'+slot('B')+'</div>'
         + '<span style="color:var(--sub);font-size:2.2vh">Quando as duas equipes entrarem, o jogo começa sozinho.</span>';
     } else if (S.fase === 'final') {
       var A = S.equipes.A, B = S.equipes.B, cores = ['#FFD60A','#FF2E88','#3DDC84','#FF8A3D','#2EC4FF'], conf = '';
@@ -620,7 +621,7 @@ function renderTV(){
     p = comImgTV(q.img, p);
     var st = function(e){
       var n = esc(S.equipes[e].nome).toUpperCase();
-      if (rev) return '<span style="color:'+corEq(e)+'">'+(S.resultado[e] ? n+' ACERTOU · +1 DEGRAU' : n+' · FICA PRA PRÓXIMA')+'</span>';
+      if (rev) return '<span style="color:'+corEq(e)+'">'+(S.resultado[e] ? n+' ACERTOU · +1 DEGRAU' : (S.respostas[e] === null ? n+' · SEM RESPOSTA (TEMPO ESGOTADO)' : n+' · FICA PRA PRÓXIMA'))+'</span>';
       return S.respostas[e] !== null ? '<span style="color:'+corEq(e)+'">● '+n+' JÁ RESPONDEU</span>' : '<span class="pisca" style="color:'+corEq(e)+'">'+n+' PENSANDO…</span>';
     };
     p += '<div class="status">'+st('A')+st('B')+'</div>';
@@ -636,7 +637,7 @@ var E = { cid: Math.random().toString(36).slice(2), equipe: 'A', avatar: 'lobo',
 function initEquipe(){
   var grade = Object.keys(AV).map(function(k){ return '<button type="button" data-av="'+k+'" class="'+(k===E.avatar?'sel':'')+'" aria-pressed="'+(k===E.avatar)+'">'+avatarHTML(k,0,'encarando')+AV_NOMES[k]+'</button>'; }).join('');
   $('#app').innerHTML = '<form class="eq" id="fEntrar"><h2 style="color:var(--am)">ENTRAR NO JOGO</h2><div id="msgErro"></div>'
-    + '<div class="campos"><div class="campo"><label for="cod">CÓDIGO DA SALA</label><input id="cod" inputmode="numeric" maxlength="4" required class="bung" style="letter-spacing:6px;font-size:24px"></div>'
+    + '<div class="campos">'
     + '<div class="campo"><label>LADO</label><div class="lado-btn"><button type="button" data-lado="A" class="a sel">Equipe A</button><button type="button" data-lado="B" class="b">Equipe B</button></div></div>'
     + '<div class="campo"><label for="nome">NOME DA EQUIPE</label><input id="nome" maxlength="16" required placeholder="Ex.: Lobos"></div></div>'
     + '<label>ESCOLHA O AVATAR</label><div class="grade-av">'+grade+'</div>'
@@ -649,10 +650,10 @@ function initEquipe(){
   $('#fEntrar').addEventListener('submit', function(ev){
     ev.preventDefault();
     telaCheia();
-    var cod = $('#cod').value.trim(), nome = $('#nome').value.trim();
-    if (!/^\d{4}$/.test(cod) || !nome) return;
+    var cod = SALA, nome = $('#nome').value.trim();
+    if (!nome) return;
     $('#bEntrar').disabled = true; $('#bEntrar').textContent = 'ENTRANDO…'; $('#msgErro').innerHTML = '';
-    var falhou = setTimeout(function(){ if (!E.ok) erroEntrar('Sala não encontrada. Confira o código e se a TV está aberta.'); }, 5000);
+    var falhou = setTimeout(function(){ if (!E.ok) erroEntrar('A TV não respondeu. Abra primeiro a tela da TV e tente de novo.'); }, 5000);
     var go = function(){ enviar(E.ch, { t: 'entrar', equipe: E.equipe, nome: nome, avatar: E.avatar, cid: E.cid }); };
     if (E.ch && E.sala === cod) { go(); return; }
     if (E.ch) sb.removeChannel(E.ch);
@@ -761,7 +762,7 @@ function renderEq(){
       + (respondeu ? '<div class="aviso-env">Resposta enviada! Aguardando '+nOut+'…</div>' : '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p>');
   } else if (s.fase === 'revelacao') {
     var ok = s.resultado[eu];
-    h = topo(false, true) + '<div style="display:flex;align-items:center;gap:20px;justify-content:center">'+avatarHTML(me.avatar,0,ok?'feliz':'triste','120px')+'<p class="grande" style="color:'+(ok?'var(--ok)':'#FF4D6D')+'">'+(ok?'ACERTARAM! +1':'NÃO FOI DESSA VEZ')+'</p></div>'
+    h = topo(false, true) + '<div style="display:flex;align-items:center;gap:20px;justify-content:center">'+avatarHTML(me.avatar,0,ok?'feliz':'triste','120px')+'<p class="grande" style="color:'+(ok?'var(--ok)':'#FF4D6D')+'">'+(ok?'ACERTARAM! +1':(s.respostas[eu] === null ? 'TEMPO ESGOTADO · SEM RESPOSTA' : 'NÃO FOI DESSA VEZ'))+'</p></div>'
       + blocoEq(s.pergunta, altsEq(s.pergunta.alts, 'x', true, s.respostas[eu] === null ? -1 : s.respostas[eu], s.pergunta.correta))
       + '<p class="sub" style="text-align:center;margin:0">Próxima pergunta em <b class="bung" id="tempoEq" style="color:var(--am)">'+tempo+'</b></p>';
   }
@@ -791,7 +792,7 @@ function loginAdmin(msg){
 function painelAdmin(){
   $('#app').innerHTML = '<div class="adm"><div class="adm-topo"><div><h1>EQUIPE x EQUIPE · ADMIN</h1><span style="color:var(--sub);font-size:14px">Banco de perguntas (fica salvo). As partidas não ficam salvas.</span></div>'
     + '<div style="display:flex;gap:10px"><a class="btn" href="#tv" target="_blank" style="text-decoration:none;font-family:Bungee,sans-serif;font-weight:400">ABRIR A TV</a><button class="btn sec" id="bSair">Sair</button></div></div>'
-    + '<form class="caixa" id="fEspiar"><h2>Acompanhar a partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="campo" style="width:180px"><label for="codEsp">CÓDIGO DA SALA (aparece na TV)</label><input id="codEsp" inputmode="numeric" maxlength="4" class="bung" style="letter-spacing:5px;font-size:20px"></div><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="espiarArea"></div></form>'
+    + '<form class="caixa" id="fEspiar"><h2>Acompanhar a partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="espiarArea"></div></form>'
     + '<div id="contagem" style="color:var(--sub)"></div><div class="adm-grid"><div class="caixa" id="lista"></div><form class="caixa" id="fPerg"></form></div></div>';
   $('#bSair').onclick = function(){ sb.auth.signOut().then(function(){ loginAdmin(); }); };
   $('#lista').addEventListener('click', function(ev){
@@ -805,7 +806,7 @@ function painelAdmin(){
   });
   $('#fEspiar').onsubmit = function(ev){
     ev.preventDefault();
-    var c = $('#codEsp').value.trim(); if (!/^\d{4}$/.test(c)) return;
+    var c = SALA;
     var base = location.pathname;
     $('#espiarArea').innerHTML = '<div class="espiar-grid">' + ['A','B'].map(function(e){
       return '<div class="espiar-box"><b style="color:'+corEq(e)+'">Notebook da Equipe '+e+'</b><div class="espiar-frame"><iframe title="Tela da Equipe '+e+'" src="'+base+'#espiar-'+c+'-'+e+'"></iframe></div></div>'; }).join('') + '</div>';

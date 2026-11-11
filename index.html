@@ -221,14 +221,14 @@ button.carta{cursor:pointer}
    (Supabase > Project Settings > API)
    ========================================================= */
 var CONFIG = {
-  SUPABASE_URL: 'COLE_AQUI_A_URL_DO_SUPABASE',
-  SUPABASE_ANON_KEY: 'COLE_AQUI_A_ANON_KEY'
+  SUPABASE_URL: 'https://tuhcyjjxhpckgtsjzbue.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1aGN5amp4aHBja2d0c2p6YnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNzMyNzQsImV4cCI6MjEwOTk0OTI3NH0.2xyqAr6A-jJpkgxZRlNu3GReX3D2ce_VY-FEVTe5Ks8'
 };
 
 var TEMPO_PERGUNTA = 20, TEMPO_REVELACAO = 5, TEMPO_LER_DESAFIO = 3, TEMPO_RESP_DESAFIO = 8, TEMPO_RESULT_DESAFIO = 4;
 var PERGUNTAS_POR_PARTIDA = 10, DEGRAU_INICIAL = 3, DEGRAU_MIN = 1, DEGRAU_MAX = 10;
 
-var sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+var sb = null;
 function $(s){ return document.querySelector(s); }
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 var LET = 'ABCD';
@@ -338,7 +338,12 @@ function degrausHTML(n, cor){ var h=''; for (var i=1;i<=10;i++) h += '<i style="
 window.addEventListener('hashchange', function(){ location.reload(); });
 function iniciar(){
 var modo = location.hash.replace('#','');
-if (CONFIG.SUPABASE_URL.indexOf('COLE_AQUI') === 0) {
+var falta = CONFIG.SUPABASE_URL.indexOf('COLE_AQUI') === 0 || CONFIG.SUPABASE_ANON_KEY.indexOf('COLE_AQUI') === 0;
+if (!falta) {
+  try { sb = window.supabase.createClient(CONFIG.SUPABASE_URL.trim(), CONFIG.SUPABASE_ANON_KEY.trim()); }
+  catch (e) { $('#app').innerHTML = '<div class="home"><div class="erro">A URL ou a chave do Supabase está errada: '+esc(e.message)+'</div></div>'; return; }
+}
+if (falta) {
   $('#app').innerHTML = '<div class="home"><div class="erro">Falta configurar o Supabase: abra o arquivo index.html e cole a URL e a anon key no começo do código.</div></div>';
 } else if (modo === 'tv') initTV();
 else if (modo === 'equipe') initEquipe();

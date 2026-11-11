@@ -191,6 +191,14 @@ button.carta{cursor:pointer}
 .aviso-env{background:var(--card);border:2px solid var(--am);border-radius:16px;padding:14px 18px;text-align:center;font-weight:800;font-size:18px}
 
 body.espiao #eqTela{pointer-events:none}
+/* imagens das perguntas */
+.com-img{display:flex;gap:2.4vh;align-items:center}
+.com-img .qimg{height:24vh;max-width:34vw;object-fit:contain;border-radius:1.6vh;background:#fff;flex-shrink:0}
+.com-img .qcol{flex:1;display:flex;flex-direction:column;gap:1.6vh;min-width:0}
+.perg-img{display:flex;gap:22px;align-items:center}
+.perg-img img{max-height:30vh;max-width:45%;object-fit:contain;border-radius:16px;background:#fff;flex-shrink:0}
+.miniimg{width:44px;height:44px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px;background:#fff}
+.prev-img{max-width:100%;max-height:180px;object-fit:contain;border-radius:12px;background:#fff;align-self:flex-start}
 /* ---------- ADMIN ---------- */
 .espiar-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .espiar-box{display:flex;flex-direction:column;gap:8px}
@@ -335,6 +343,8 @@ function cartaHTML(classes, cw, tag, attrs){
   tag = tag || 'div';
   return '<'+tag+' class="carta '+(classes||'')+'" style="--cw:'+cw+'" '+(attrs||'')+'><span class="verso"><span>?</span></span><span class="frente">PERGUNTA<br>DESAFIO</span></'+tag+'>';
 }
+function comImgTV(img, html){ return img ? '<div class="com-img"><img class="qimg" src="'+esc(img)+'" alt=""><div class="qcol">'+html+'</div></div>' : html; }
+function pergEq(p){ return p.img ? '<div class="perg-img"><img src="'+esc(p.img)+'" alt="Imagem da pergunta"><div class="pergunta-eq">'+esc(p.texto)+'</div></div>' : '<div class="pergunta-eq">'+esc(p.texto)+'</div>'; }
 function degrausHTML(n, cor){ var h=''; for (var i=1;i<=10;i++) h += '<i style="'+(i<=n?'background:'+cor:'')+'"></i>'; return h; }
 
 /* =========================================================
@@ -369,7 +379,7 @@ function initHome(){
    TV — comanda o jogo (nada é salvo)
    ========================================================= */
 var S, chTV, banco = { normal: [], desafio: [] }, filaPerg = [], usadosDesafio = {}, sigCentro = '', sigPainel = '', sigCheia = '';
-function mk(r){ return { id: r.id, tema: r.tema, texto: r.pergunta, alts: r.alternativas, correta: r.correta }; }
+function mk(r){ return { id: r.id, tema: r.tema, texto: r.pergunta, img: r.imagem_url || null, alts: r.alternativas, correta: r.correta }; }
 
 function initTV(){
   document.body.classList.add('tv-mode');
@@ -577,8 +587,8 @@ function renderTV(){
     p = '<div class="banner pisca">DESAFIO ATIVADO PELA EQUIPE '+de+'</div>';
     if (d.etapa === 'escolhendo') p += '<div class="status" style="justify-content:center;color:#E8C2D6">Jogo pausado · '+de+' está escolhendo uma carta para '+para+'</div>';
     else if (d.etapa === 'carta') p += '<div class="status pisca" style="justify-content:center">'+para+' PRECISAM ABRIR A CARTA</div><div class="status" style="justify-content:center;color:#E8C2D6">3 segundos para ler · 8 para responder · acertou sobe 3 degraus · errou desce 3</div>';
-    else if (d.etapa === 'resultado') p += '<div class="q" style="text-align:center">'+(d.acertou ? para+' ACERTARAM O DESAFIO!' : 'NÃO FOI DESSA VEZ, '+para+'!')+'</div><div class="alts">'+d.pergunta.alts.map(function(a,i){ return '<span class="'+(i===d.pergunta.correta?'certa':'')+'"><b>'+LET[i]+'</b>'+esc(a)+'</span>'; }).join('')+'</div>';
-    else p += '<div class="q">'+esc(d.pergunta.texto)+'</div><div class="alts">'+d.pergunta.alts.map(function(a,i){ return '<span><b>'+LET[i]+'</b>'+esc(a)+'</span>'; }).join('')+'</div>';
+    else if (d.etapa === 'resultado') p += comImgTV(d.pergunta.img, '<div class="q" style="text-align:center">'+(d.acertou ? para+' ACERTARAM O DESAFIO!' : 'NÃO FOI DESSA VEZ, '+para+'!')+'</div><div class="alts">'+d.pergunta.alts.map(function(a,i){ return '<span class="'+(i===d.pergunta.correta?'certa':'')+'"><b>'+LET[i]+'</b>'+esc(a)+'</span>'; }).join('')+'</div>');
+    else p += comImgTV(d.pergunta.img, '<div class="q">'+esc(d.pergunta.texto)+'</div><div class="alts">'+d.pergunta.alts.map(function(a,i){ return '<span><b>'+LET[i]+'</b>'+esc(a)+'</span>'; }).join('')+'</div>');
   } else if (S.fase === 'contagem') {
     p = '<div class="q" style="text-align:center">'+nA+' x '+nB+'</div><div class="status" style="justify-content:center;color:var(--sub)">Acertou: o avatar cresce · cada equipe tem 1 carta desafio</div>';
   } else {
@@ -587,6 +597,7 @@ function renderTV(){
       var marcas = '';
       if (rev) ['A','B'].forEach(function(e){ if (S.respostas[e] === i) marcas += '<em style="color:'+corEq(e)+'">'+esc(S.equipes[e].nome).toUpperCase()+'</em>'; });
       return '<span class="'+(rev && i===q.correta?'certa':'')+'"><b>'+LET[i]+'</b>'+esc(a)+marcas+'</span>'; }).join('')+'</div>';
+    p = comImgTV(q.img, p);
     var st = function(e){
       var n = esc(S.equipes[e].nome).toUpperCase();
       if (rev) return '<span style="color:'+corEq(e)+'">'+(S.resultado[e] ? n+' ACERTOU · +1 DEGRAU' : n+' · FICA PRA PRÓXIMA')+'</span>';
@@ -701,22 +712,22 @@ function renderEq(){
     } else {
       if (d.etapa === 'escolhendo') h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'susto')+'<p class="grande pisca" style="color:var(--rosa)">'+de+' VÃO DESAFIAR VOCÊS!</p><p class="sub">Preparem-se… o jogo está pausado.</p></div>';
       else if (d.etapa === 'carta') h = '<div class="centro-eq"><p class="grande pisca" style="color:var(--rosa)">'+de+' DESAFIARAM VOCÊS!</p><p class="sub">O jogo está pausado nas 3 telas até vocês responderem.</p><div class="pisca">'+cartaHTML('', 'min(26vh,250px)', 'button', 'data-act="abrir" aria-label="Abrir a carta"')+'</div><p class="bung" style="font-size:26px;margin:0">TOQUE NA CARTA PARA ABRIR</p></div>';
-      else if (d.etapa === 'lendo') h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="sub">LEIAM! <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:44px">'+tempo+'</b></span></div><div style="display:flex;gap:24px;align-items:center">'+cartaHTML('abrindo','90px')+'<div class="pergunta-eq">'+esc(d.pergunta.texto)+'</div></div>'+altsEq(d.pergunta.alts,'respd',true,-1,-1);
+      else if (d.etapa === 'lendo') h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="sub">LEIAM! <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:44px">'+tempo+'</b></span></div><div style="display:flex;gap:24px;align-items:center">'+cartaHTML('abrindo','90px')+'<div class="pergunta-eq">'+esc(d.pergunta.texto)+'</div></div>'+(d.pergunta.img?'<div class="perg-img"><img src="'+esc(d.pergunta.img)+'" alt="Imagem da pergunta"></div>':'')+altsEq(d.pergunta.alts,'respd',true,-1,-1);
       else if (d.etapa === 'respondendo') {
         var travou = E.minhaD !== undefined;
-        h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca" id="tempoEq">'+tempo+'</span></div><div class="pergunta-eq">'+esc(d.pergunta.texto)+'</div>'+altsEq(d.pergunta.alts,'respd',travou,travou?E.minhaD:-1,-1)+(travou?'<div class="aviso-env">Resposta enviada!</div>':'');
+        h = '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca" id="tempoEq">'+tempo+'</span></div>'+pergEq(d.pergunta)+altsEq(d.pergunta.alts,'respd',travou,travou?E.minhaD:-1,-1)+(travou?'<div class="aviso-env">Resposta enviada!</div>':'');
       } else {
         h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,d.acertou?'feliz':'triste')+'<p class="grande" style="color:'+(d.acertou?'var(--ok)':'#FF4D6D')+'">'+(d.acertou?'ACERTARAM! +3 DEGRAUS':'NÃO FOI DESSA VEZ · −3')+'</p></div>'+altsEq(d.pergunta.alts,'x',true,-1,d.pergunta.correta);
       }
     }
   } else if (s.fase === 'pergunta') {
     var minha = s.respostas[eu] !== null ? s.respostas[eu] : E.minha[s.idx], respondeu = minha !== undefined && minha !== null;
-    h = topo(true, true) + '<div class="pergunta-eq">'+esc(s.pergunta.texto)+'</div>' + altsEq(s.pergunta.alts, 'resp', respondeu, respondeu?minha:-1, -1)
+    h = topo(true, true) + pergEq(s.pergunta) + altsEq(s.pergunta.alts, 'resp', respondeu, respondeu?minha:-1, -1)
       + (respondeu ? '<div class="aviso-env">Resposta enviada! Aguardando '+nOut+'…</div>' : '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p>');
   } else if (s.fase === 'revelacao') {
     var ok = s.resultado[eu];
     h = topo(false, true) + '<div style="display:flex;align-items:center;gap:20px;justify-content:center">'+avatarHTML(me.avatar,0,ok?'feliz':'triste','120px')+'<p class="grande" style="color:'+(ok?'var(--ok)':'#FF4D6D')+'">'+(ok?'ACERTARAM! +1':'NÃO FOI DESSA VEZ')+'</p></div>'
-      + '<div class="pergunta-eq">'+esc(s.pergunta.texto)+'</div>' + altsEq(s.pergunta.alts, 'x', true, s.respostas[eu] === null ? -1 : s.respostas[eu], s.pergunta.correta)
+      + pergEq(s.pergunta) + altsEq(s.pergunta.alts, 'x', true, s.respostas[eu] === null ? -1 : s.respostas[eu], s.pergunta.correta)
       + '<p class="sub" style="text-align:center;margin:0">Próxima pergunta em <b class="bung" id="tempoEq" style="color:var(--am)">'+tempo+'</b></p>';
   }
   $('#eqTela').innerHTML = h;
@@ -787,8 +798,29 @@ function renderLista(){
     + [['todas','TODAS'],['normal','NORMAL'],['desafio','DESAFIO']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(ADM.filtro===f[0]?'sel':'')+'">'+f[1]+'</button>'; }).join('') + '</div></div>'
     + (itens.length ? itens.map(function(p){
         return '<div class="linha-q"><span class="tag '+(p.tipo==='normal'?'n':'d')+'">'+p.tipo.toUpperCase()+'</span><span style="color:var(--sub)">'+(p.tema==='seguranca'?'Segurança':'Processo')+'</span>'
-          + '<span>'+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
+          + '<span>'+(p.imagem_url?'<img class="miniimg" src="'+esc(p.imagem_url)+'" alt="">':'')+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
       : '<p style="color:var(--sub)">Nenhuma pergunta ainda.</p>');
+}
+// reduz a foto (máx. 1280px) antes de enviar, para carregar rápido na TV
+function subirImagem(f){
+  if (!f) return Promise.resolve(null);
+  return new Promise(function(ok, erro){
+    var img = new Image();
+    img.onload = function(){
+      var esc2 = Math.min(1, 1280 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * esc2); c.height = Math.round(img.height * esc2);
+      var cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(function(blob){
+        var nome = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+        sb.storage.from('imagens').upload(nome, blob, { contentType: 'image/jpeg' }).then(function(r){
+          if (r.error) { erro(r.error); return; }
+          ok(sb.storage.from('imagens').getPublicUrl(nome).data.publicUrl);
+        });
+      }, 'image/jpeg', 0.85);
+    };
+    img.onerror = function(){ erro(new Error('arquivo de imagem inválido')); };
+    img.src = URL.createObjectURL(f);
+  });
 }
 function renderForm(){
   var p = ADM.editando || { tipo: 'normal', tema: 'processo', pergunta: '', alternativas: ['', '', '', ''], correta: 0 };
@@ -796,21 +828,33 @@ function renderForm(){
     + '<div class="dupla"><div class="campo"><label for="ti">Tipo</label><select id="ti"><option value="normal">Normal (20s)</option><option value="desafio">Desafio (3s + 8s)</option></select></div>'
     + '<div class="campo"><label for="te">Tema</label><select id="te"><option value="processo">Processo</option><option value="seguranca">Segurança do trabalho</option></select></div></div>'
     + '<div class="campo"><label for="pe">Pergunta</label><textarea id="pe" rows="3" required style="resize:vertical">'+esc(p.pergunta)+'</textarea></div>'
+    + '<div class="campo"><label for="im">Imagem (opcional)</label><input id="im" type="file" accept="image/*"><div id="prevImg" style="display:flex;flex-direction:column;gap:8px">'+(p.imagem_url?'<img class="prev-img" src="'+esc(p.imagem_url)+'" alt="Imagem atual"><button type="button" class="btn sec" id="bTiraImg">Remover imagem</button>':'')+'</div></div>'
     + '<label>Alternativas (marque a certa)</label>'
     + [0,1,2,3].map(function(i){ return '<div class="alt-linha"><input type="radio" name="ce" value="'+i+'" id="ce'+i+'" '+(p.correta===i?'checked':'')+'><label for="ce'+i+'"><b>'+LET[i]+'</b></label><input id="al'+i+'" required aria-label="Alternativa '+LET[i]+'" value="'+esc(p.alternativas[i]||'')+'"></div>'; }).join('')
     + '<div id="msgF"></div><button class="btn verde">'+(ADM.editando ? 'Salvar alterações' : 'Salvar pergunta')+'</button>'
     + (ADM.editando ? '<button type="button" class="btn sec" id="bCanc">Cancelar edição</button>' : '');
   $('#ti').value = p.tipo; $('#te').value = p.tema;
+  ADM.imgAtual = p.imagem_url || null; ADM.arquivo = null;
+  $('#im').onchange = function(){
+    var f = this.files[0]; ADM.arquivo = f || null;
+    $('#prevImg').innerHTML = f ? '<img class="prev-img" src="'+URL.createObjectURL(f)+'" alt="Prévia">' : '';
+  };
+  if ($('#bTiraImg')) $('#bTiraImg').onclick = function(){ ADM.imgAtual = null; $('#prevImg').innerHTML = '<span style="color:var(--sub)">A imagem será removida ao salvar.</span>'; };
   if ($('#bCanc')) $('#bCanc').onclick = function(){ ADM.editando = null; renderForm(); };
   $('#fPerg').onsubmit = function(ev){
     ev.preventDefault();
     var dados = { tipo: $('#ti').value, tema: $('#te').value, pergunta: $('#pe').value.trim(),
       alternativas: [0,1,2,3].map(function(i){ return $('#al'+i).value.trim(); }), correta: +document.querySelector('input[name=ce]:checked').value };
-    var q = ADM.editando ? sb.from('perguntas').update(dados).eq('id', ADM.editando.id) : sb.from('perguntas').insert(dados);
-    q.then(function(r){
-      if (r.error) { $('#msgF').innerHTML = '<div class="erro">'+esc(r.error.message)+'</div>'; return; }
-      ADM.editando = null; renderForm(); carregar();
-    });
+    var bt = ev.target.querySelector('.btn.verde'); bt.disabled = true; bt.textContent = 'Salvando…';
+    var falha = function(msg){ $('#msgF').innerHTML = '<div class="erro">'+esc(msg)+'</div>'; bt.disabled = false; bt.textContent = 'Salvar'; };
+    subirImagem(ADM.arquivo).then(function(url){
+      dados.imagem_url = ADM.arquivo ? url : ADM.imgAtual;
+      var q = ADM.editando ? sb.from('perguntas').update(dados).eq('id', ADM.editando.id) : sb.from('perguntas').insert(dados);
+      return q.then(function(r){
+        if (r.error) { falha(r.error.message); return; }
+        ADM.editando = null; renderForm(); carregar();
+      });
+    }).catch(function(e){ falha('Erro ao enviar a imagem: ' + (e && e.message ? e.message : e)); });
   };
 }
 iniciar();

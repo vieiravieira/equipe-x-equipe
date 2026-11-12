@@ -300,7 +300,7 @@ function corEq(e){ return e === 'A' ? 'var(--a)' : 'var(--b)'; }
 
 var SONS = { gamestart: 'sons/gamestart.mp3', final: 'sons/final.mp3', entrar: 'sons/entrar.mp3', contagem: 'sons/contagem.mp3' };
 var somContagem = null;
-function tocarContagem(){ pararContagem(); try { somContagem = new Audio(SONS.contagem); somContagem.volume = 0.8; var r = somContagem.play(); if (r && r.catch) r.catch(function(){}); } catch (e) {} }
+function tocarContagem(repetir){ pararContagem(); try { somContagem = new Audio(SONS.contagem); somContagem.volume = 0.8; somContagem.loop = !!repetir; var r = somContagem.play(); if (r && r.catch) r.catch(function(){}); } catch (e) {} }
 function pararContagem(){ if (somContagem) { try { somContagem.pause(); } catch (e) {} somContagem = null; } }
 function tocarEEsperar(nome, depois){
   var feito = false, fim = function(){ if (!feito) { feito = true; depois(); } };
@@ -593,16 +593,16 @@ function tick(){
     if (d.etapa === 'lendo' || d.etapa === 'respondendo' || d.etapa === 'resultado') {
       d.tempo--;
       if (d.tempo <= 0) {
-        if (d.etapa === 'lendo') { d.etapa = 'respondendo'; d.tempo = TEMPO_RESP_DESAFIO; }
+        if (d.etapa === 'lendo') { d.etapa = 'respondendo'; d.tempo = TEMPO_RESP_DESAFIO; tocarContagem(true); }
         else if (d.etapa === 'respondendo') { fecharDesafio(); return; }
         else { S.desafio = null; }
-      } else if (d.etapa === 'respondendo' && d.tempo === 4) tocarContagem();
+      }
       publicar();
     }
     return; // jogo congelado durante o desafio
   }
   if (S.fase === 'contagem') { S.tempo--; if (S.tempo <= 0) { proxima(); return; } publicar(); }
-  else if (S.fase === 'pergunta') { S.tempo--; if (S.tempo <= 0) { revelar(); return; } if (S.tempo === 4) tocarContagem(); publicar(); }
+  else if (S.fase === 'pergunta') { S.tempo--; if (S.tempo <= 0) { revelar(); return; } if (S.tempo === 8) tocarContagem(true); publicar(); }
   else if (S.fase === 'revelacao') { S.tempo--; if (S.tempo <= 0) { proxima(); return; } publicar(); }
 }
 

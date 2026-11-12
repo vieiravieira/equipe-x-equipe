@@ -274,7 +274,7 @@ function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.f
 function temaNome(t){ return t === 'seguranca' ? 'SEGURANÇA DO TRABALHO' : 'PROCESSO'; }
 function corEq(e){ return e === 'A' ? 'var(--a)' : 'var(--b)'; }
 
-var SONS = { gamestart: 'sons/gamestart.mp3' };
+var SONS = { gamestart: 'sons/gamestart.mp3', final: 'sons/final.mp3' };
 function tocar(nome){ try { var a = new Audio(SONS[nome]); a.volume = 0.8; var r = a.play(); if (r && r.catch) r.catch(function(){}); } catch (e) {} }
 function abrirCanal(sala, aoReceber){
   return new Promise(function(ok){
@@ -540,7 +540,7 @@ function fecharDesafio(){
 }
 function proxima(){
   S.idx++;
-  if (S.idx >= filaPerg.length) { S.fase = 'final'; S.pergunta = null; publicar(); return; }
+  if (S.idx >= filaPerg.length) { S.fase = 'final'; S.pergunta = null; tocar('final'); publicar(); return; }
   S.pergunta = mk(filaPerg[S.idx]); S.respostas = { A: null, B: null }; S.resultado = null;
   S.fase = 'pergunta'; S.tempo = TEMPO_PERGUNTA; publicar();
 }

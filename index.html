@@ -99,6 +99,18 @@ button.carta{cursor:pointer}
 .carta.flutua{animation:flutua 1s ease-in-out infinite}
 @keyframes flutua{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
 
+/* transições suaves na TV */
+@keyframes entra{from{opacity:0;transform:translateY(2.5vh)}to{opacity:1;transform:none}}
+@keyframes entraCentro{from{opacity:0;transform:scale(.4) rotate(-20deg)}to{opacity:1;transform:none}}
+.painel > *{animation:entra .5s ease-out both}
+.painel > *:nth-child(2){animation-delay:.1s}.painel > *:nth-child(3){animation-delay:.2s}
+.painel.sem-anim > *{animation:none}
+.alts span{transition:background .4s,color .4s,transform .4s}
+.alts span.certa{animation:destaca .6s ease-out 2}
+@keyframes destaca{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.centro .miolo{animation:entraCentro .55s cubic-bezier(.3,1.5,.5,1) both}
+.centro .miolo.pisca{animation:piscaTxt 1s ease-in-out infinite}
+.centro .raios{transition:opacity .4s}
 /* ---------- HOME ---------- */
 .home{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:32px}
 .home h1{font-family:Bungee,sans-serif;font-size:clamp(40px,7vw,80px);margin:0;color:var(--am);font-weight:400}
@@ -129,7 +141,7 @@ button.carta{cursor:pointer}
 .centro .num.urgente{color:#FF4D6D}
 .centro .rot{font-size:2vh;letter-spacing:.5vh;color:var(--sub)}
 .modo-desafio .centro .num{color:var(--rosa)}
-.painel{position:relative;z-index:3;background:var(--card);border:2px solid var(--linha);border-radius:2.6vh;padding:2.4vh 3vh;display:flex;flex-direction:column;gap:1.6vh}
+.painel{position:relative;z-index:3;min-height:31vh;justify-content:center;background:var(--card);border:2px solid var(--linha);border-radius:2.6vh;padding:2.4vh 3vh;display:flex;flex-direction:column;gap:1.6vh}
 .modo-desafio .painel{background:rgba(30,6,18,.9);border-color:var(--rosa)}
 .painel .q{font-size:3.8vh;font-weight:800;line-height:1.2}
 .alts{display:grid;grid-template-columns:1fr 1fr;gap:1.2vh;font-size:2.5vh}
@@ -676,6 +688,7 @@ function renderTV(){
   // painel
   var sp = sc + JSON.stringify(S.respostas), p = '';
   if (sp === sigPainel) return;
+  var soStatus = sigPainel.indexOf(sc) === 0; // mesma tela, só mudou quem respondeu: sem animar de novo
   sigPainel = sp;
   var nA = esc(S.equipes.A.nome).toUpperCase(), nB = esc(S.equipes.B.nome).toUpperCase();
   if (d) {
@@ -701,6 +714,7 @@ function renderTV(){
     };
     p += '<div class="status">'+st('A')+st('B')+'</div>';
   }
+  $('#painel').classList.toggle('sem-anim', soStatus);
   $('#painel').innerHTML = p;
 }
 

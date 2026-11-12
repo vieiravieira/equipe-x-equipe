@@ -274,6 +274,8 @@ function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.f
 function temaNome(t){ return t === 'seguranca' ? 'SEGURANÇA DO TRABALHO' : 'PROCESSO'; }
 function corEq(e){ return e === 'A' ? 'var(--a)' : 'var(--b)'; }
 
+var SONS = { gamestart: 'sons/gamestart.mp3' };
+function tocar(nome){ try { var a = new Audio(SONS[nome]); a.volume = 0.8; var r = a.play(); if (r && r.catch) r.catch(function(){}); } catch (e) {} }
 function abrirCanal(sala, aoReceber){
   return new Promise(function(ok){
     var ch = sb.channel('exe-' + sala, { config: { broadcast: { self: false } } });
@@ -459,6 +461,7 @@ function publicar(){ if (chTV) enviar(chTV, { t: 'estado', s: pub() }); renderTV
 function onMsgTV(m){
   var d = S.desafio, eq;
   if (m.t === 'ola') { publicar(); }
+  else if (m.t === 'iniciar') { if (S.fase === 'pronto') { S.fase = 'contagem'; S.tempo = 5; publicar(); } }
   else if (m.t === 'entrar') {
     var atual = S.equipes[m.equipe];
     if (atual && atual.cid !== m.cid && atual.nome.toLowerCase() !== String(m.nome).toLowerCase()) {
@@ -467,7 +470,7 @@ function onMsgTV(m){
     if (!atual && S.fase !== 'lobby') { enviar(chTV, { t: 'recusado', cid: m.cid, motivo: 'O jogo já começou.' }); return; }
     if (atual) atual.cid = m.cid;
     else S.equipes[m.equipe] = { nome: String(m.nome).slice(0, 16), avatar: AV[m.avatar] ? m.avatar : 'lobo', degrau: DEGRAU_INICIAL, desafioUsado: false, cid: m.cid };
-    if (S.fase === 'lobby' && S.equipes.A && S.equipes.B) { S.fase = 'contagem'; S.tempo = 5; }
+    if (S.fase === 'lobby' && S.equipes.A && S.equipes.B) { S.fase = 'pronto'; tocar('gamestart'); }
     publicar();
   }
   else if (m.t === 'responder') {
@@ -567,10 +570,10 @@ function renderTV(){
   var d = S.desafio;
   document.body.classList.toggle('modo-desafio', !!d);
   // telas cheias (sala de espera e encerramento)
-  var cheia = $('#cheia'), sig = S.fase === 'lobby' ? 'lobby' + JSON.stringify(S.equipes) : (S.fase === 'final' ? 'final' : '');
+  var cheia = $('#cheia'), ehLobby = S.fase === 'lobby' || S.fase === 'pronto', sig = ehLobby ? S.fase + JSON.stringify(S.equipes) : (S.fase === 'final' ? 'final' : '');
   if (sig !== sigCheia) {
     sigCheia = sig;
-    if (S.fase === 'lobby') {
+    if (ehLobby) {
       var slot = function(e){
         var q = S.equipes[e];
         if (!q) return '<div class="slot"><div class="vazio">?</div><b class="bung" style="font-size:3.4vh;color:#6A6A7A">EQUIPE '+e+'</b><span class="pisca" style="color:var(--sub)">aguardando…</span></div>';
@@ -578,7 +581,7 @@ function renderTV(){
       };
       cheia.innerHTML = '<h1>EQUIPE <b>x</b> EQUIPE</h1><span style="color:var(--sub);letter-spacing:.3vh;font-size:2.2vh">PROCESSOS E SEGURANÇA DO TRABALHO</span>'
         + '<div class="slots">'+slot('A')+'<div class="codigo"><span style="letter-spacing:.4vh;color:var(--sub)">CÓDIGO DA SALA</span><b style="text-transform:uppercase">'+esc(S.sala)+'</b><span style="color:var(--sub)">Nos notebooks: '+esc(location.host)+'/#equipe</span></div>'+slot('B')+'</div>'
-        + '<span style="color:var(--sub);font-size:2.2vh">Quando as duas equipes entrarem, o jogo começa sozinho.</span>';
+        + (S.fase === 'pronto' ? '<span class="pisca bung" style="color:var(--am);font-size:3.2vh">TUDO PRONTO! AGUARDANDO O START</span>' : '<span style="color:var(--sub);font-size:2.2vh">Aguardando as duas equipes entrarem…</span>');
     } else if (S.fase === 'final') {
       var A = S.equipes.A, B = S.equipes.B, cores = ['#FFD60A','#FF2E88','#3DDC84','#FF8A3D','#2EC4FF'], conf = '';
       for (var i=0;i<60;i++) conf += '<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:'+cores[i%5]+';animation-duration:'+(3+Math.random()*4).toFixed(1)+'s;animation-delay:-'+(Math.random()*6).toFixed(1)+'s"></i>';
@@ -589,7 +592,7 @@ function renderTV(){
         + '</div>';
     } else cheia.innerHTML = '';
   }
-  if (S.fase === 'lobby' || S.fase === 'final') return;
+  if (ehLobby || S.fase === 'final') return;
 
   // topo
   ['A','B'].forEach(function(e){
@@ -757,9 +760,9 @@ function renderEq(){
       + (btnDesafio ? '<button class="btn-desafio" data-act="desafiar" '+(podeDesafiar?'':'disabled')+' aria-label="Desafiar a outra equipe"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="12" height="17" rx="2" transform="rotate(-8 11 11)"/><path d="M13 8 l-3 4 h4 l-3 4"/></svg>DESAFIAR <em>'+(me.desafioUsado?'0':'1')+'</em></button>' : '<span></span>')
       + '</div>';
   };
-  if (s.fase === 'lobby' || s.fase === 'contagem') {
+  if (s.fase === 'lobby' || s.fase === 'pronto' || s.fase === 'contagem') {
     h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'encarando')+'<p class="grande" style="color:'+cor+'">VOCÊS SÃO '+nome+'!</p>'
-      + (s.fase === 'lobby' ? '<p class="sub pisca">Aguardando a outra equipe entrar…</p>' : '<p class="sub">O jogo começa em <b class="bung" id="tempoEq" style="color:var(--am);font-size:28px">'+tempo+'</b></p>')
+      + (s.fase === 'lobby' ? '<p class="sub pisca">Aguardando a outra equipe entrar…</p>' : s.fase === 'pronto' ? '<p class="sub pisca">Tudo pronto! Aguardando o início do jogo…</p>' : '<p class="sub">O jogo começa em <b class="bung" id="tempoEq" style="color:var(--am);font-size:28px">'+tempo+'</b></p>')
       + '<p class="sub">Olhem para a TV!</p></div>';
   } else if (s.fase === 'final') {
     h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'festa')+'<p class="grande" style="color:var(--am)">FIM DE JOGO!</p><p class="sub">Olhem para a TV. Obrigado por jogar!</p></div>';
@@ -816,7 +819,7 @@ function loginAdmin(msg){
 function painelAdmin(){
   $('#app').innerHTML = '<div class="adm"><div class="adm-topo"><div><h1>EQUIPE x EQUIPE · ADMIN</h1><span style="color:var(--sub);font-size:14px">Banco de perguntas (fica salvo). As partidas não ficam salvas.</span></div>'
     + '<div style="display:flex;gap:10px"><a class="btn" href="#tv" target="_blank" style="text-decoration:none;font-family:Bungee,sans-serif;font-weight:400">ABRIR A TV</a><button class="btn sec" id="bSair">Sair</button></div></div>'
-    + '<form class="caixa" id="fEspiar"><h2>Código da sala e partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="campo" style="width:220px"><label for="codEsp">CÓDIGO DA SALA</label>'+campoCodigo('codEsp',';font-size:20px')+'</div><button type="button" class="btn verde" id="bSalvaCod">Salvar código</button><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="msgCod" style="color:var(--sub);font-size:14px">A TV usa esse código sozinha. Os notebooks digitam o mesmo código para entrar.</div><div id="espiarArea"></div></form>'
+    + '<form class="caixa" id="fEspiar"><h2>Código da sala e partida ao vivo</h2><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="campo" style="width:220px"><label for="codEsp">CÓDIGO DA SALA</label>'+campoCodigo('codEsp',';font-size:20px')+'</div><button type="button" class="btn verde" id="bSalvaCod">Salvar código</button><button type="button" class="btn" id="bStart" disabled style="font-family:Bungee,sans-serif;font-weight:400;font-size:20px">▶ START</button><button class="btn">Ver telas das equipes</button><button type="button" class="btn sec" id="bFecharEsp" style="display:none">Fechar</button></div><div id="statusSala" style="font-weight:800"></div><div id="msgCod" style="color:var(--sub);font-size:14px">A TV usa esse código sozinha. Os notebooks digitam o mesmo código para entrar.</div><div id="espiarArea"></div></form>'
     + '<div id="contagem" style="color:var(--sub)"></div><div class="adm-grid"><div class="caixa" id="lista"></div><form class="caixa" id="fPerg"></form></div></div>';
   $('#bSair').onclick = function(){ sb.auth.signOut().then(function(){ loginAdmin(); }); };
   $('#lista').addEventListener('click', function(ev){
@@ -830,13 +833,15 @@ function painelAdmin(){
   });
   sb.from('config').select('valor').eq('chave', 'codigo_sala').then(function(rc){
     if (rc.error) { $('#msgCod').innerHTML = '<span style="color:#FFC2CE">Falta criar a tabela de configuração no Supabase (rode o SQL que o Claude mandou).</span>'; return; }
-    if (rc.data && rc.data[0]) $('#codEsp').value = rc.data[0].valor;
+    if (rc.data && rc.data[0]) { $('#codEsp').value = rc.data[0].valor; conectarSalaAdm(limpaCod(rc.data[0].valor)); }
   });
+  $('#bStart').onclick = function(){ if (ADM.ch) { enviar(ADM.ch, { t: 'iniciar' }); this.disabled = true; } };
+  $('#codEsp').addEventListener('change', function(){ conectarSalaAdm(limpaCod(this.value)); });
   $('#bSalvaCod').onclick = function(){
     var c = limpaCod($('#codEsp').value); if (!c) { $('#codEsp').focus(); return; }
     sb.from('config').upsert({ chave: 'codigo_sala', valor: c }).then(function(r){
       $('#msgCod').innerHTML = r.error ? '<span style="color:#FFC2CE">Erro ao salvar: '+esc(r.error.message)+'</span>'
-        : '<span style="color:var(--ok)">Código salvo! Abra (ou recarregue) a TV e ela já entra na sala '+esc(c.toUpperCase())+'.</span>';
+        : (conectarSalaAdm(c), '') + '<span style="color:var(--ok)">Código salvo! Abra (ou recarregue) a TV e ela já entra na sala '+esc(c.toUpperCase())+'.</span>';
     });
   };
   $('#fEspiar').onsubmit = function(ev){
@@ -851,6 +856,23 @@ function painelAdmin(){
   $('#bFecharEsp').onclick = function(){ $('#espiarArea').innerHTML = ''; this.style.display = 'none'; };
   window.addEventListener('resize', ajustarEspiar);
   renderForm(); carregar();
+}
+function conectarSalaAdm(c){
+  if (!c || ADM.sala === c) return;
+  if (ADM.ch) sb.removeChannel(ADM.ch);
+  ADM.sala = c; ADM.ch = null;
+  var st = $('#statusSala'); if (st) st.innerHTML = '<span style="color:var(--sub)">Sala '+esc(c.toUpperCase())+': procurando a TV…</span>';
+  abrirCanal(c, function(m){
+    if (m.t !== 'estado' || ADM.sala !== c) return;
+    var s = m.s, txt, cor = 'var(--sub)';
+    var n = function(e){ return s.equipes[e] ? esc(s.equipes[e].nome) : '—'; };
+    if (s.fase === 'lobby') txt = 'Aguardando equipes · A: '+n('A')+' · B: '+n('B');
+    else if (s.fase === 'pronto') { txt = 'Tudo pronto: '+n('A')+' x '+n('B')+' · aperte START'; cor = 'var(--am)'; }
+    else if (s.fase === 'final') txt = 'Partida encerrada (recarregue a TV para jogar de novo)';
+    else txt = 'Jogo em andamento · pergunta '+(s.idx+1)+' de '+s.total;
+    $('#statusSala').innerHTML = '<span style="color:'+cor+'">Sala '+esc(c.toUpperCase())+': '+txt+'</span>';
+    $('#bStart').disabled = s.fase !== 'pronto';
+  }).then(function(ch){ if (ADM.sala !== c) { sb.removeChannel(ch); return; } ADM.ch = ch; enviar(ch, { t: 'ola' }); });
 }
 function ajustarEspiar(){
   document.querySelectorAll('.espiar-frame').forEach(function(f){ var i = f.querySelector('iframe'); if (i) i.style.transform = 'scale(' + (f.clientWidth / 1280) + ')'; });

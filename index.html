@@ -392,6 +392,7 @@ if (falta) {
 } else if (modo === 'tv') initTV();
 else if (modo.indexOf('espiar-') === 0) initEspiar(modo.split('-')[1], modo.split('-')[2]);
 else if (modo === 'equipe') initEquipe();
+else if (modo.indexOf('equipe/') === 0) reentrarEquipe(modo.split('/'));
 else if (modo === 'admin') initAdmin();
 else initHome();
 }
@@ -439,6 +440,18 @@ function pedirCodigoTV(){
   };
 }
 function iniciarSala(sala){
+    var sv = null; try { sv = JSON.parse(sessionStorage.getItem('exe_tv') || 'null'); } catch (e) {}
+    if (sv && sv.S && sv.S.sala === sala && sv.S.fase !== 'final') {
+      // a TV foi atualizada no meio: continua a mesma partida
+      var porId = {}; banco.normal.forEach(function(p){ porId[p.id] = p; });
+      var fila = (sv.fila || []).map(function(id){ return porId[id]; }).filter(Boolean);
+      if (fila.length) {
+        filaPerg = fila; usadosDesafio = sv.usados || {}; S = sv.S;
+        montarTV();
+        abrirCanal(sala, onMsgTV).then(function(ch){ chTV = ch; publicar(); setInterval(tick, 1000); });
+        renderTV(); return;
+      }
+    }
     S = { sala: sala, fase: 'lobby', equipes: { A: null, B: null }, idx: -1, total: filaPerg.length, pergunta: null,
           respostas: { A: null, B: null }, resultado: null, tempo: 0, desafio: null, temDesafio: banco.desafio.length > 0 };
     montarTV();
@@ -456,7 +469,11 @@ function pub(){
   }
   return s;
 }
-function publicar(){ if (chTV) enviar(chTV, { t: 'estado', s: pub() }); renderTV(); }
+function publicar(){
+  if (chTV) enviar(chTV, { t: 'estado', s: pub() });
+  try { sessionStorage.setItem('exe_tv', JSON.stringify({ S: S, fila: filaPerg.map(function(p){ return p.id; }), usados: usadosDesafio })); } catch (e) {}
+  renderTV();
+}
 
 function onMsgTV(m){
   var d = S.desafio, eq;
@@ -681,6 +698,7 @@ function initEquipe(){
     if (!cod || !nome) return;
     $('#bEntrar').disabled = true; $('#bEntrar').textContent = 'ENTRANDO…'; $('#msgErro').innerHTML = '';
     var falhou = setTimeout(function(){ if (!E.ok) erroEntrar('Sala não encontrada. Confira se o código é o mesmo da TV e se a TV está aberta.'); }, 5000);
+    E.nome = nome;
     var go = function(){ enviar(E.ch, { t: 'entrar', equipe: E.equipe, nome: nome, avatar: E.avatar, cid: E.cid }); };
     if (E.ch && E.sala === cod) { go(); return; }
     if (E.ch) sb.removeChannel(E.ch);
@@ -709,17 +727,30 @@ function botaoTelaCheia(){
   var at = function(){ b.style.display = (document.fullscreenElement || document.webkitFullscreenElement) ? 'none' : ''; };
   document.addEventListener('fullscreenchange', at); document.addEventListener('webkitfullscreenchange', at); at();
 }
+function reentrarEquipe(p){
+  // página da equipe foi atualizada: entra de novo sozinha na mesma sala
+  E.sala = p[1]; E.equipe = p[2] === 'B' ? 'B' : 'A'; E.cid = p[3] || E.cid; E.avatar = AV[p[4]] ? p[4] : 'lobo'; E.nome = decodeURIComponent(p[5] || 'Equipe');
+  $('#app').innerHTML = '<div class="home"><h1 class="pisca" style="font-size:40px">RECONECTANDO…</h1></div>';
+  E._t = setTimeout(function(){ if (!E.ok) { initEquipe(); erroEntrar('Não foi possível reconectar. Confira se a TV está aberta e entre de novo.'); } }, 6000);
+  abrirCanal(E.sala, onMsgEq).then(function(ch){ E.ch = ch; enviar(ch, { t: 'entrar', equipe: E.equipe, nome: E.nome, avatar: E.avatar, cid: E.cid }); });
+}
 function erroEntrar(msg){
   var b = $('#bEntrar'); if (!b) return;
   $('#msgErro').innerHTML = '<div class="erro">'+esc(msg)+'</div>'; b.disabled = false; b.textContent = 'ENTRAR NA SALA';
 }
 function onMsgEq(m){
-  if (m.t === 'recusado' && m.cid === E.cid) { erroEntrar(m.motivo); return; }
+  if (m.t === 'recusado' && m.cid === E.cid) { if (!$('#fEntrar')) { clearTimeout(E._t); initEquipe(); } erroEntrar(m.motivo); return; }
   if (m.t !== 'estado') return;
   E.s = m.s;
+  if (E.ok && !E.espiao && m.s.fase === 'lobby' && !m.s.equipes[E.equipe] && (!E._re || Date.now() - E._re > 3000)) {
+    E._re = Date.now(); enviar(E.ch, { t: 'entrar', equipe: E.equipe, nome: E.nome, avatar: E.avatar, cid: E.cid }); return;
+  }
   if (!E.ok) {
     var q = E.s.equipes[E.equipe];
-    if (q && q.cid === E.cid) { E.ok = true; clearTimeout(E._t); montarEq(); }
+    if (q && q.cid === E.cid) {
+      E.ok = true; clearTimeout(E._t); montarEq();
+      try { history.replaceState(null, '', '#equipe/' + [E.sala, E.equipe, E.cid, E.avatar, encodeURIComponent(E.nome)].join('/')); } catch (e) {}
+    }
     else return;
   }
   renderEq();

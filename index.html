@@ -280,7 +280,16 @@ function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.f
 function temaNome(t){ return t === 'seguranca' ? 'SEGURANÇA DO TRABALHO' : 'PROCESSO'; }
 function corEq(e){ return e === 'A' ? 'var(--a)' : 'var(--b)'; }
 
-var SONS = { gamestart: 'sons/gamestart.mp3', final: 'sons/final.mp3' };
+var SONS = { gamestart: 'sons/gamestart.mp3', final: 'sons/final.mp3', entrar: 'sons/entrar.mp3' };
+function tocarEEsperar(nome, depois){
+  var feito = false, fim = function(){ if (!feito) { feito = true; depois(); } };
+  try {
+    var a = new Audio(SONS[nome]); a.volume = 0.8;
+    a.addEventListener('ended', fim); a.addEventListener('error', fim);
+    var r = a.play(); if (r && r.catch) r.catch(fim);
+  } catch (e) { fim(); }
+  setTimeout(fim, 8000); // segurança: nunca trava a entrada
+}
 function tocar(nome){ try { var a = new Audio(SONS[nome]); a.volume = 0.8; var r = a.play(); if (r && r.catch) r.catch(function(){}); } catch (e) {} }
 function abrirCanal(sala, aoReceber){
   return new Promise(function(ok){
@@ -707,6 +716,10 @@ function initEquipe(){
     var cod = limpaCod($('#cod').value), nome = $('#nome').value.trim();
     if (!cod || !nome) return;
     $('#bEntrar').disabled = true; $('#bEntrar').textContent = 'ENTRANDO…'; $('#msgErro').innerHTML = '';
+    tocarEEsperar('entrar', function(){ entrarNaSala(cod, nome); });
+  });
+}
+function entrarNaSala(cod, nome){
     var falhou = setTimeout(function(){ if (!E.ok) erroEntrar('Sala não encontrada. Confira se o código é o mesmo da TV e se a TV está aberta.'); }, 5000);
     E.nome = nome;
     var go = function(){ enviar(E.ch, { t: 'entrar', equipe: E.equipe, nome: nome, avatar: E.avatar, cid: E.cid }); };
@@ -715,7 +728,6 @@ function initEquipe(){
     E.sala = cod;
     abrirCanal(cod, onMsgEq).then(function(ch){ E.ch = ch; go(); });
     E._t = falhou;
-  });
 }
 function initEspiar(sala, eq){
   E.equipe = eq === 'B' ? 'B' : 'A'; E.ok = true; E.espiao = true;

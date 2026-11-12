@@ -267,7 +267,8 @@ var CONFIG = {
 };
 
 var TEMPO_PERGUNTA = 20, TEMPO_REVELACAO = 5, TEMPO_LER_DESAFIO = 3, TEMPO_RESP_DESAFIO = 8, TEMPO_RESULT_DESAFIO = 4;
-var PERGUNTAS_POR_PARTIDA = 10, DEGRAU_INICIAL = 3, DEGRAU_MIN = 1, DEGRAU_MAX = 10;
+var PERGUNTAS_POR_PARTIDA = 9999, // sem limite: usa todas as perguntas normais
+    DEGRAU_INICIAL = 3, DEGRAU_MIN = 1, DEGRAU_MAX = 10;
 
 var sb = null;
 function $(s){ return document.querySelector(s); }
@@ -630,8 +631,8 @@ function renderTV(){
     setEstado(av, estadoAvatar(e));
     $('#dg'+e).innerHTML = degrausHTML(q.degrau, corEq(e));
   });
-  $('#rodada').innerHTML = S.fase === 'contagem' ? '<b>PREPAREM-SE!</b><span>'+S.total+' PERGUNTAS</span>'
-    : '<b>PERGUNTA '+(S.idx+1)+' DE '+S.total+'</b><span>'+temaNome(S.pergunta.tema)+'</span>';
+  $('#rodada').innerHTML = S.fase === 'contagem' ? '<b>PREPAREM-SE!</b><span>VAI COMEÇAR</span>'
+    : '<b>PERGUNTA '+(S.idx+1)+'</b><span>'+temaNome(S.pergunta.tema)+'</span>';
 
   // centro
   var c, tempo = d ? d.tempo : S.tempo, sc;
@@ -795,7 +796,7 @@ function renderEq(){
   var cor = corEq(eu);
   var topo = function(timer, btnDesafio){
     var podeDesafiar = s.temDesafio && !me.desafioUsado && !d;
-    return '<div class="topo-eq"><div class="quem">'+avatarHTML(me.avatar,0,'encarando')+'<div><b style="color:'+cor+'">'+nome+'</b><span>Equipe '+eu+(s.pergunta?' · pergunta '+(s.idx+1)+' de '+s.total+' · '+(s.pergunta.tema==='seguranca'?'Segurança':'Processo'):'')+'</span></div></div>'
+    return '<div class="topo-eq"><div class="quem">'+avatarHTML(me.avatar,0,'encarando')+'<div><b style="color:'+cor+'">'+nome+'</b><span>Equipe '+eu+(s.pergunta?' · pergunta '+(s.idx+1)+' · '+(s.pergunta.tema==='seguranca'?'Segurança':'Processo'):'')+'</span></div></div>'
       + (timer ? '<span class="timer-eq pisca" id="tempoEq">'+tempo+'</span>' : '')
       + (btnDesafio ? '<button class="btn-desafio" data-act="desafiar" '+(podeDesafiar?'':'disabled')+' aria-label="Desafiar a outra equipe"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="12" height="17" rx="2" transform="rotate(-8 11 11)"/><path d="M13 8 l-3 4 h4 l-3 4"/></svg>DESAFIAR <em>'+(me.desafioUsado?'0':'1')+'</em></button>' : '<span></span>')
       + '</div>';
@@ -940,16 +941,15 @@ function mover(id, dir){
 function renderLista(){
   var n = ADM.lista.filter(function(p){ return p.tipo === 'normal'; }).length, dd = ADM.lista.length - n;
   $('#contagem').innerHTML = '<b style="color:var(--am)">'+n+'</b> normais · <b style="color:var(--rosa)">'+dd+'</b> desafio'
-    + (n < PERGUNTAS_POR_PARTIDA ? ' · <span style="color:#FFC2CE">cadastre pelo menos '+PERGUNTAS_POR_PARTIDA+' normais para a partida ter '+PERGUNTAS_POR_PARTIDA+' perguntas</span>' : '')
     + (dd < 6 ? ' · <span style="color:#FFC2CE">recomendado: pelo menos 6 de desafio (3 cartas para cada equipe)</span>' : '');
   var grupos = { normal: [], desafio: [] };
   ADM.lista.slice().sort(porOrdem).forEach(function(p){ (grupos[p.tipo] || grupos.normal).push(p); });
   var itens = (ADM.filtro === 'desafio' ? [] : grupos.normal).concat(ADM.filtro === 'normal' ? [] : grupos.desafio);
   $('#lista').innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>Perguntas cadastradas</h2><div class="filtros">'
     + [['todas','TODAS'],['normal','NORMAL'],['desafio','DESAFIO']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(ADM.filtro===f[0]?'sel':'')+'">'+f[1]+'</button>'; }).join('') + '</div></div>'
-    + '<p style="color:var(--sub);font-size:13px;margin:0">Use ▲ ▼ para mudar a ordem. A partida usa as '+PERGUNTAS_POR_PARTIDA+' primeiras perguntas normais, nessa ordem. As de desafio são sorteadas nas cartas.</p>'
+    + '<p style="color:var(--sub);font-size:13px;margin:0">Use ▲ ▼ para mudar a ordem. A partida usa todas as perguntas normais, nessa ordem. As de desafio são sorteadas nas cartas.</p>'
     + (itens.length ? itens.map(function(p){
-        var g = grupos[p.tipo] || grupos.normal, i = g.indexOf(p), fora = p.tipo === 'normal' && i >= PERGUNTAS_POR_PARTIDA;
+        var g = grupos[p.tipo] || grupos.normal, i = g.indexOf(p), fora = false;
         return '<div class="linha-q'+(fora?' fora':'')+'" title="'+(fora?'Fora da partida (só as '+PERGUNTAS_POR_PARTIDA+' primeiras entram)':'')+'"><span class="pos"><button type="button" data-mov="-1" data-id="'+p.id+'" aria-label="Subir" '+(i===0?'disabled':'')+'>▲</button><b>'+(i+1)+'</b><button type="button" data-mov="1" data-id="'+p.id+'" aria-label="Descer" '+(i===g.length-1?'disabled':'')+'>▼</button></span><span class="tag '+(p.tipo==='normal'?'n':'d')+'">'+p.tipo.toUpperCase()+'</span><span style="color:var(--sub)">'+(p.tema==='seguranca'?'Segurança':'Processo')+'</span>'
           + '<span>'+(p.imagem_url?'<img class="miniimg" src="'+esc(p.imagem_url)+'" alt="">':'')+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ver="'+p.id+'">Ver</button><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
       : '<p style="color:var(--sub)">Nenhuma pergunta ainda.</p>');
@@ -979,7 +979,7 @@ function previaHTML(p, certa){
   var des = p.tipo === 'desafio', tema = p.tema === 'seguranca' ? 'Segurança' : 'Processo';
   var topo = des
     ? '<div class="topo-eq"><span class="bung" style="color:var(--rosa);font-size:22px">PERGUNTA DESAFIO</span><span class="timer-eq pisca">8</span></div>'
-    : '<div class="topo-eq"><div class="quem">'+avatarHTML('lobo',0,'encarando')+'<div><b style="color:var(--a)">LOBOS</b><span>Equipe A · pergunta 1 de 10 · '+tema+'</span></div></div><span class="timer-eq pisca">20</span><span class="btn-desafio">DESAFIAR <em>1</em></span></div>';
+    : '<div class="topo-eq"><div class="quem">'+avatarHTML('lobo',0,'encarando')+'<div><b style="color:var(--a)">LOBOS</b><span>Equipe A · pergunta 1 · '+tema+'</span></div></div><span class="timer-eq pisca">20</span><span class="btn-desafio">DESAFIAR <em>1</em></span></div>';
   return '<div class="eq'+(des?' modo-desafio':'')+'" style="min-height:0;height:800px;max-width:none;margin:0;background:'+(des?'radial-gradient(circle at 50% 45%,#4A0A2A 0%,#14040C 75%)':'var(--bg)')+'">'
     + topo + blocoEq(p, altsEq(p.alts, 'x', false, -1, certa ? p.correta : -1))
     + '<p class="sub" style="text-align:center;margin:0">Toque na alternativa para responder. A resposta vai direto.</p></div>';

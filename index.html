@@ -236,7 +236,12 @@ body.espiao #eqTela{pointer-events:none}
 .filtros{display:flex;gap:8px;flex-wrap:wrap}
 .filtros button{background:none;border:1.5px solid var(--linha);color:#fff;border-radius:99px;padding:6px 14px;font-weight:800;font-size:13px;cursor:pointer}
 .filtros button.sel{border-color:var(--am);color:var(--am)}
-.linha-q{display:grid;grid-template-columns:86px 92px 1fr auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--linha);font-size:15px}
+.pos{display:flex;flex-direction:column;align-items:center;gap:2px}
+.pos button{background:var(--card2);border:1px solid var(--linha);color:#fff;border-radius:6px;width:30px;height:24px;cursor:pointer;font-size:11px;line-height:1}
+.pos button:disabled{opacity:.25;cursor:default}
+.pos b{font-family:Bungee,sans-serif;font-weight:400;font-size:15px}
+.linha-q.fora{opacity:.5}
+.linha-q{display:grid;grid-template-columns:40px 86px 92px 1fr auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--linha);font-size:15px}
 .tag{font-size:11px;font-weight:800;border:1.5px solid;border-radius:99px;padding:3px 9px;text-align:center}
 .tag.n{color:var(--am)}.tag.d{color:var(--rosa)}
 .linha-q .acoes{display:flex;gap:6px}
@@ -409,6 +414,10 @@ function initHome(){
    TV — comanda o jogo (nada é salvo)
    ========================================================= */
 var S, chTV, banco = { normal: [], desafio: [] }, filaPerg = [], usadosDesafio = {}, sigCentro = '', sigPainel = '', sigCheia = '';
+function porOrdem(a, b){
+  var oa = a.ordem == null ? 1e9 : a.ordem, ob = b.ordem == null ? 1e9 : b.ordem;
+  return oa !== ob ? oa - ob : String(a.created_at).localeCompare(String(b.created_at));
+}
 function mk(r){ return { id: r.id, tema: r.tema, texto: r.pergunta, img: r.imagem_url || null, alts: r.alternativas, correta: r.correta }; }
 
 function initTV(){
@@ -420,7 +429,7 @@ function initTV(){
     banco.normal = rows.filter(function(p){ return p.tipo === 'normal'; });
     banco.desafio = rows.filter(function(p){ return p.tipo === 'desafio'; });
     if (!banco.normal.length) { $('#app').innerHTML = '<div class="home"><div class="erro">Nenhuma pergunta normal cadastrada. Cadastre pela tela Admin.</div><a class="btn" href="#admin" style="text-decoration:none">Ir para o Admin</a></div>'; return; }
-    filaPerg = shuffle(banco.normal).slice(0, PERGUNTAS_POR_PARTIDA);
+    filaPerg = banco.normal.slice().sort(porOrdem).slice(0, PERGUNTAS_POR_PARTIDA);
     sb.from('config').select('valor').eq('chave', 'codigo_sala').then(function(rc){
       var v = (!rc.error && rc.data && rc.data[0]) ? limpaCod(rc.data[0].valor) : '';
       if (v) iniciarSala(v); else pedirCodigoTV();
@@ -856,6 +865,7 @@ function painelAdmin(){
   $('#lista').addEventListener('click', function(ev){
     var b = ev.target.closest('button'); if (!b) return;
     if (b.getAttribute('data-f')) { ADM.filtro = b.getAttribute('data-f'); renderLista(); }
+    if (b.getAttribute('data-mov')) { mover(b.getAttribute('data-id'), +b.getAttribute('data-mov')); return; }
     var idv = b.getAttribute('data-ver');
     if (idv) { var pv = ADM.lista.filter(function(x){ return x.id === idv; })[0]; abrirPrevia({ tipo: pv.tipo, tema: pv.tema, texto: pv.pergunta, img: pv.imagem_url, alts: pv.alternativas, correta: pv.correta }); }
     var id = b.getAttribute('data-ed'); if (id) { ADM.editando = ADM.lista.filter(function(p){ return p.id === id; })[0]; renderForm(); window.scrollTo(0,0); }
@@ -914,16 +924,33 @@ function carregar(){
     ADM.lista = r.data || []; renderLista();
   });
 }
+function mover(id, dir){
+  var p = ADM.lista.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  var g = ADM.lista.filter(function(x){ return x.tipo === p.tipo; }).sort(porOrdem), i = g.indexOf(p), j = i + dir;
+  if (j < 0 || j >= g.length) return;
+  g[i] = g[j]; g[j] = p;
+  var mudou = [];
+  g.forEach(function(x, k){ if (x.ordem !== k + 1) { x.ordem = k + 1; mudou.push(x); } });
+  renderLista();
+  Promise.all(mudou.map(function(x){ return sb.from('perguntas').update({ ordem: x.ordem }).eq('id', x.id); })).then(function(rs){
+    var e = rs.filter(function(r){ return r.error; })[0];
+    if (e) { alert(/ordem/.test(e.error.message) ? 'Falta rodar no Supabase o SQL da ordem das perguntas.' : e.error.message); carregar(); }
+  });
+}
 function renderLista(){
   var n = ADM.lista.filter(function(p){ return p.tipo === 'normal'; }).length, dd = ADM.lista.length - n;
   $('#contagem').innerHTML = '<b style="color:var(--am)">'+n+'</b> normais · <b style="color:var(--rosa)">'+dd+'</b> desafio'
     + (n < PERGUNTAS_POR_PARTIDA ? ' · <span style="color:#FFC2CE">cadastre pelo menos '+PERGUNTAS_POR_PARTIDA+' normais para a partida ter '+PERGUNTAS_POR_PARTIDA+' perguntas</span>' : '')
     + (dd < 6 ? ' · <span style="color:#FFC2CE">recomendado: pelo menos 6 de desafio (3 cartas para cada equipe)</span>' : '');
-  var itens = ADM.lista.filter(function(p){ return ADM.filtro === 'todas' || p.tipo === ADM.filtro; });
+  var grupos = { normal: [], desafio: [] };
+  ADM.lista.slice().sort(porOrdem).forEach(function(p){ (grupos[p.tipo] || grupos.normal).push(p); });
+  var itens = (ADM.filtro === 'desafio' ? [] : grupos.normal).concat(ADM.filtro === 'normal' ? [] : grupos.desafio);
   $('#lista').innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>Perguntas cadastradas</h2><div class="filtros">'
     + [['todas','TODAS'],['normal','NORMAL'],['desafio','DESAFIO']].map(function(f){ return '<button type="button" data-f="'+f[0]+'" class="'+(ADM.filtro===f[0]?'sel':'')+'">'+f[1]+'</button>'; }).join('') + '</div></div>'
+    + '<p style="color:var(--sub);font-size:13px;margin:0">Use ▲ ▼ para mudar a ordem. A partida usa as '+PERGUNTAS_POR_PARTIDA+' primeiras perguntas normais, nessa ordem. As de desafio são sorteadas nas cartas.</p>'
     + (itens.length ? itens.map(function(p){
-        return '<div class="linha-q"><span class="tag '+(p.tipo==='normal'?'n':'d')+'">'+p.tipo.toUpperCase()+'</span><span style="color:var(--sub)">'+(p.tema==='seguranca'?'Segurança':'Processo')+'</span>'
+        var g = grupos[p.tipo] || grupos.normal, i = g.indexOf(p), fora = p.tipo === 'normal' && i >= PERGUNTAS_POR_PARTIDA;
+        return '<div class="linha-q'+(fora?' fora':'')+'" title="'+(fora?'Fora da partida (só as '+PERGUNTAS_POR_PARTIDA+' primeiras entram)':'')+'"><span class="pos"><button type="button" data-mov="-1" data-id="'+p.id+'" aria-label="Subir" '+(i===0?'disabled':'')+'>▲</button><b>'+(i+1)+'</b><button type="button" data-mov="1" data-id="'+p.id+'" aria-label="Descer" '+(i===g.length-1?'disabled':'')+'>▼</button></span><span class="tag '+(p.tipo==='normal'?'n':'d')+'">'+p.tipo.toUpperCase()+'</span><span style="color:var(--sub)">'+(p.tema==='seguranca'?'Segurança':'Processo')+'</span>'
           + '<span>'+(p.imagem_url?'<img class="miniimg" src="'+esc(p.imagem_url)+'" alt="">':'')+esc(p.pergunta)+' <b style="color:var(--ok)">('+LET[p.correta]+')</b></span><span class="acoes"><button type="button" data-ver="'+p.id+'">Ver</button><button type="button" data-ed="'+p.id+'">Editar</button><button type="button" data-del="'+p.id+'">Excluir</button></span></div>'; }).join('')
       : '<p style="color:var(--sub)">Nenhuma pergunta ainda.</p>');
 }
@@ -1004,6 +1031,10 @@ function renderForm(){
     var falha = function(msg){ $('#msgF').innerHTML = '<div class="erro">'+esc(msg)+'</div>'; bt.disabled = false; bt.textContent = 'Salvar'; };
     subirImagem(ADM.arquivo).then(function(url){
       dados.imagem_url = ADM.arquivo ? url : ADM.imgAtual;
+      if (!ADM.editando && ADM.lista.length && ('ordem' in ADM.lista[0])) {
+        var mx = 0; ADM.lista.forEach(function(x){ if (x.tipo === dados.tipo && x.ordem > mx) mx = x.ordem; });
+        dados.ordem = mx + 1;
+      }
       var q = ADM.editando ? sb.from('perguntas').update(dados).eq('id', ADM.editando.id) : sb.from('perguntas').insert(dados);
       return q.then(function(r){
         if (r.error) { falha(r.error.message); return; }

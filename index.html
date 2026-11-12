@@ -763,15 +763,15 @@ function renderEq(){
   if (s.fase === 'lobby' || s.fase === 'pronto' || s.fase === 'contagem') {
     h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'encarando')+'<p class="grande" style="color:'+cor+'">VOCÊS SÃO '+nome+'!</p>'
       + (s.fase === 'lobby' ? '<p class="sub pisca">Aguardando a outra equipe entrar…</p>' : s.fase === 'pronto' ? '<p class="sub pisca">Tudo pronto! Aguardando o início do jogo…</p>' : '<p class="sub">O jogo começa em <b class="bung" id="tempoEq" style="color:var(--am);font-size:28px">'+tempo+'</b></p>')
-      + '<p class="sub">Olhem para a TV!</p></div>';
+      + '</div>';
   } else if (s.fase === 'final') {
-    h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'festa')+'<p class="grande" style="color:var(--am)">FIM DE JOGO!</p><p class="sub">Olhem para a TV. Obrigado por jogar!</p></div>';
+    h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'festa')+'<p class="grande" style="color:var(--am)">FIM DE JOGO!</p><p class="sub">Obrigado por jogar!</p></div>';
   } else if (d) {
     var de = esc(s.equipes[d.de].nome).toUpperCase(), para = esc(s.equipes[d.para].nome).toUpperCase();
     if (d.de === eu) {
       if (d.etapa === 'escolhendo') h = '<div class="centro-eq"><span class="bung" style="color:var(--rosa);font-size:22px">MODO DESAFIO</span><p class="grande">Escolham uma carta para<br>desafiar '+para+'</p><div class="cartas3">'+[0,1,2].slice(0, d.cartas.length).map(function(n){ return cartaHTML('', 'min(19vw,230px)', 'button', 'data-act="carta" data-n="'+n+'" aria-label="Carta '+(n+1)+'"'); }).join('')+'</div><button class="link" data-act="cancelar">Voltar sem desafiar</button></div>';
       else if (d.etapa === 'resultado') h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,d.acertou?'':'ri')+'<p class="grande">'+(d.acertou ? para+' ACERTARAM O DESAFIO!' : para+' NÃO ACERTARAM!')+'</p><p class="sub">O jogo já vai continuar.</p></div>';
-      else h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'ri')+'<p class="grande" style="color:var(--rosa)">CARTA ENVIADA!</p><p class="sub">Agora é com '+para+'. '+(d.etapa==='respondendo'?'Tempo: <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:28px">'+tempo+'</b>':'Olhem para a TV!')+'</p></div>';
+      else h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'ri')+'<p class="grande" style="color:var(--rosa)">CARTA ENVIADA!</p><p class="sub">Agora é com '+para+'. '+(d.etapa==='respondendo'?'Tempo: <b class="bung" id="tempoEq" style="color:var(--rosa);font-size:28px">'+tempo+'</b>':'')+'</p></div>';
     } else {
       if (d.etapa === 'escolhendo') h = '<div class="centro-eq">'+avatarHTML(me.avatar,0,'susto')+'<p class="grande pisca" style="color:var(--rosa)">'+de+' VÃO DESAFIAR VOCÊS!</p><p class="sub">Preparem-se… o jogo está pausado.</p></div>';
       else if (d.etapa === 'carta') h = '<div class="centro-eq"><p class="grande pisca" style="color:var(--rosa)">'+de+' DESAFIARAM VOCÊS!</p><p class="sub">O jogo está pausado nas 3 telas até vocês responderem.</p><div class="pisca">'+cartaHTML('', 'min(26vh,250px)', 'button', 'data-act="abrir" aria-label="Abrir a carta"')+'</div><p class="bung" style="font-size:26px;margin:0">TOQUE NA CARTA PARA ABRIR</p></div>';

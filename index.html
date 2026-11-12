@@ -286,7 +286,10 @@ function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.f
 function temaNome(t){ return t === 'seguranca' ? 'SEGURANÇA DO TRABALHO' : 'PROCESSO'; }
 function corEq(e){ return e === 'A' ? 'var(--a)' : 'var(--b)'; }
 
-var SONS = { gamestart: 'sons/gamestart.mp3', final: 'sons/final.mp3', entrar: 'sons/entrar.mp3' };
+var SONS = { gamestart: 'sons/gamestart.mp3', final: 'sons/final.mp3', entrar: 'sons/entrar.mp3', contagem: 'sons/contagem.mp3' };
+var somContagem = null;
+function tocarContagem(){ pararContagem(); try { somContagem = new Audio(SONS.contagem); somContagem.volume = 0.8; var r = somContagem.play(); if (r && r.catch) r.catch(function(){}); } catch (e) {} }
+function pararContagem(){ if (somContagem) { try { somContagem.pause(); } catch (e) {} somContagem = null; } }
 function tocarEEsperar(nome, depois){
   var feito = false, fim = function(){ if (!feito) { feito = true; depois(); } };
   try {
@@ -503,7 +506,7 @@ function publicar(){
 function onMsgTV(m){
   var d = S.desafio, eq;
   if (m.t === 'ola') { publicar(); }
-  else if (m.t === 'iniciar') { if (S.fase === 'pronto') { S.fase = 'contagem'; S.tempo = 5; publicar(); } }
+  else if (m.t === 'iniciar') { if (S.fase === 'pronto') { S.fase = 'contagem'; S.tempo = 5; tocarContagem(); publicar(); } }
   else if (m.t === 'entrar') {
     var atual = S.equipes[m.equipe];
     if (atual && atual.cid !== m.cid && atual.nome.toLowerCase() !== String(m.nome).toLowerCase()) {
@@ -526,6 +529,7 @@ function onMsgTV(m){
     if (!eq || eq.desafioUsado || d || (S.fase !== 'pergunta' && S.fase !== 'revelacao')) return;
     var disp = banco.desafio.filter(function(p){ return !usadosDesafio[p.id]; });
     if (!disp.length) return;
+    pararContagem();
     S.desafio = { de: m.equipe, para: OUTRA(m.equipe), etapa: 'escolhendo', cartas: shuffle(disp).slice(0, 3).map(function(p){ return p.id; }), pergunta: null, tempo: 0, resposta: null, acertou: null };
     publicar();
   }
@@ -549,6 +553,7 @@ function onMsgTV(m){
 }
 
 function revelar(){
+  pararContagem();
   S.fase = 'revelacao'; S.tempo = TEMPO_REVELACAO; S.resultado = {};
   ['A','B'].forEach(function(e){
     var ok = S.respostas[e] === S.pergunta.correta;
@@ -558,6 +563,7 @@ function revelar(){
   publicar();
 }
 function fecharDesafio(){
+  pararContagem();
   var d = S.desafio, eq = S.equipes[d.para];
   d.acertou = d.resposta === d.pergunta.correta;
   eq.degrau = clamp(eq.degrau + (d.acertou ? 3 : -3), DEGRAU_MIN, DEGRAU_MAX);
@@ -578,13 +584,13 @@ function tick(){
         if (d.etapa === 'lendo') { d.etapa = 'respondendo'; d.tempo = TEMPO_RESP_DESAFIO; }
         else if (d.etapa === 'respondendo') { fecharDesafio(); return; }
         else { S.desafio = null; }
-      }
+      } else if (d.etapa === 'respondendo' && d.tempo === 4) tocarContagem();
       publicar();
     }
     return; // jogo congelado durante o desafio
   }
   if (S.fase === 'contagem') { S.tempo--; if (S.tempo <= 0) { proxima(); return; } publicar(); }
-  else if (S.fase === 'pergunta') { S.tempo--; if (S.tempo <= 0) { revelar(); return; } publicar(); }
+  else if (S.fase === 'pergunta') { S.tempo--; if (S.tempo <= 0) { revelar(); return; } if (S.tempo === 4) tocarContagem(); publicar(); }
   else if (S.fase === 'revelacao') { S.tempo--; if (S.tempo <= 0) { proxima(); return; } publicar(); }
 }
 
